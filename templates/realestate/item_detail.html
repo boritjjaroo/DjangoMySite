@@ -1,0 +1,178 @@
+{% load static %}
+{% load humanize %}
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <link rel="stylesheet" type="text/css" href="{% static 'css/style.css' %}" />
+</head>
+
+<body>
+    <div>
+        <form action="{% url 'realestate:item_modify' item.id %}" method="post">
+            {% csrf_token %}
+            <p><textarea name="memo" id="memo" rows="5" style="width: 100%; max-width: 100%;">{{item.memo}}</textarea></p>
+            <p><input type="submit" value="메모 수정"></p>
+        </form>
+    </div>
+    <div>
+        <table>
+            {% if json %}
+            <tr>
+                <th width="300">글제목</th>
+                <td>{% if json.articleDetail.tradeCompleteYN == 'Y' %}(거래완료){% else %}(거래중){% endif %} {% if json.articleDetail.directTradeYN == 'Y' %}(직거래){% endif %} [{{json.articleDetail.articleNo}}] {{json.articleDetail.articleName}} - {{json.articleDetail.articleSubName}}</td>
+            </tr>
+            <tr>
+                <th>지역</th>
+                <td>{{json.articleDetail.cityName}} {{json.articleDetail.divisionName}} {{json.articleDetail.sectionName}}</td>
+            </tr>
+            <tr>
+                <th>구분</th>
+                <td>{{json.articleDetail.buildingTypeName}} - {{json.articleDetail.realestateTypeName}}({{json.articleDetail.realestateTypeCode}}) - {{json.articleDetail.tradeTypeName}}({{json.articleDetail.tradeTypeCode}})</td>
+            </tr>
+            <tr>
+                <th>확인날짜</th>
+                <td>{{json.articleDetail.articleConfirmYMD}} ({{json.articleDetail.exposeStartYMD}} ~ {{json.articleDetail.exposeEndYMD}})</td>
+            </tr>
+            <tr>
+                <th>위도,경도</th>
+                <td>{{json.articleDetail.latitude}} {{json.articleDetail.longitude}}</td>
+            </tr>
+            <tr>
+                <th>상세주소</th>
+                <td>{{json.articleDetail.detailAddress}}</td>
+            </tr>
+            <tr>
+                <th>지번주소 노출 여부</th>
+                <td>{{json.articleDetail.jibunAddressExposureYn}}</td>
+            </tr>
+            <tr>
+                <th>상세주소 여부</th>
+                <td>{{json.articleDetail.detailAddressYn}}</td>
+            </tr>
+            <tr>
+                <th>동/호수</th>
+                <td>{{json.articleDetail.etcAddress}}</td>
+            </tr>
+            <tr>
+                <th>공개되는 주소</th>
+                <td>{{json.articleDetail.exposureAddress}}</td>
+            </tr>
+            <tr>
+                <th>virtualAddressYn</th>
+                <td>{{json.articleDetail.virtualAddressYn}}</td>
+            </tr>
+            <tr>
+                <th>방 수</th>
+                <td>방 {{json.articleDetail.roomCount}} / 화장실 {{json.articleDetail.bathroomCount}}</td>
+            </tr>
+            <tr>
+                <th>세대 수</th>
+                <td>{{json.articleDetail.householdCount}}</td>
+            </tr>
+            <tr>
+                <th>태그</th>
+                <td>{{json.articleDetail.tagList}}</td>
+            </tr>
+            <tr>
+                <th>개요</th>
+                <td>{{json.articleDetail.articleFeatureDescription}}</td>
+            </tr>
+            <tr>
+                <th>상세 설명</th>
+                <td>{{json.articleDetail.detailDescription|linebreaks}}</td>
+            </tr>
+            <tr>
+                <th>입주 가능일</th>
+                <td>{{json.articleDetail.moveInTypeName}} ({{json.articleDetail.moveInTypeCode}}) ({{json.articleDetail.moveInPossibleYmd}}) {% if json.articleDetail.moveInDiscussionPossibleYN == 'Y' %}(협의가능){% endif %}</td>
+            </tr>
+            <tr>
+                <th>월 관리비</th>
+                <td>{{json.articleDetail.monthlyManagementCost}}</td>
+            </tr>
+            <tr>
+                <th>주차 가능 여부</th>
+                <td>{{json.articleDetail.parkingPossibleYN}} ({{json.articleDetail.parkingCount}}대)</td>
+            </tr>
+            <tr>
+                <th>복층 여부</th>
+                <td>{{json.articleDetail.duplexYN}} ({{json.articleDetail.floorLayerName}})</td>
+            </tr>
+            <tr>
+                <th>법적 용도</th>
+                <td>{{json.articleDetail.lawUsage}}</td>
+            </tr>
+            {% endif %}
+        </table>
+    </div>
+    <div>
+        <table>
+            {% if json %}
+            <tr>
+                <th width="300">허위 매물 신고 여부</th>
+                <td>{{json.articleDetail.isFalseHoodDeclared}}</td>
+            </tr>
+            <tr>
+                <th>허위 매물 차단 여부</th>
+                <td>{{json.articleDetail.isBlockFalseHood}}</td>
+            </tr>
+
+            <tr>
+                <th>tradeBuildingTypeCode</th>
+                <td>{{json.articleDetail.tradeBuildingTypeCode}}</td>
+            </tr>
+            <tr>
+                <th>건물 동 개수</th>
+                <td>{{json.articleDetail.totalDongCount}}</td>
+            </tr>
+            <tr>
+                <th>articleStatusCode</th>
+                <td>{{json.articleDetail.articleStatusCode}}</td>
+            </tr>
+            <tr>
+                <th>articleTypeCode</th>
+                <td>{{json.articleDetail.articleTypeCode}}</td>
+            </tr>
+            <tr>
+                <th>verificationTypeCode</th>
+                <td>{{json.articleDetail.verificationTypeCode}}</td>
+            </tr>
+            <tr>
+                <th>applyYN</th>
+                <td>{{json.articleDetail.applyYN}}</td>
+            </tr>
+            <tr>
+                <th>mapLocationIndicationYn</th>
+                <td>{{json.articleDetail.mapLocationIndicationYn}}</td>
+            </tr>
+            <tr>
+                <th>pnu</th>
+                <td>{{json.articleDetail.pnu}}</td>
+            </tr>
+            <tr>
+                <th>grandPlanList</th>
+                <td>{{json.articleDetail.grandPlanList}}</td>
+            </tr>
+            <tr>
+                <th>buildingTypeCode</th>
+                <td>{{json.articleDetail.buildingTypeCode}}</td>
+            </tr>
+            <tr>
+                <th>hasBuildingUnitInfo</th>
+                <td>{{json.articleDetail.hasBuildingUnitInfo}}</td>
+            </tr>
+            <tr>
+                <th>isComplex</th>
+                <td>{{json.articleDetail.isComplex}}</td>
+            </tr>
+            <tr>
+                <th>isOwnerTradeCompleted</th>
+                <td>{{json.articleDetail.isOwnerTradeCompleted}}</td>
+            </tr>
+            {% endif %}
+        </table>
+    </div>
+</body>
+
+</html>
