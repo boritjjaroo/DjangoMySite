@@ -20,4 +20,5 @@ from realestate import views
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('realestate/', include('realestate.urls')),
+    path('mmd/', include('mmd.urls')),
 ]
