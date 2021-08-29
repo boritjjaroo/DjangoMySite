@@ -9,29 +9,111 @@
         <style>
             th { text-align: center;}
         </style>
+        <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+        <script src="{% static 'js/common.js' %}"></script>
+        <script type="text/javascript">
+            $(function(){
+                $('#btn_prev').click(function() {
+                    var cur_page = parseInt($('#page').attr('value'), 10);
+                    $('#page').attr('value', cur_page-1)
+                    $('#form_search').submit();
+                });
+                $('#btn_next').click(function() {
+                    var cur_page = parseInt($('#page').attr('value'), 10);
+                    $('#page').attr('value', cur_page+1)
+                    $('#form_search').submit();
+                });
+                $('#btn_go').click(function() {
+                    var cur_page = $('#go_page_number').val();
+                    $('#page').attr('value', cur_page)
+                    $('#form_search').submit();
+                });
+                $('#select_per_page').change(function() {
+                    $('#per_page').attr('value', this.value);
+                    $('#form_search').submit();
+                });
+            });
+        </script>
     </head>
     <body>
+        <form action="{% url 'mmd:index' %}" method="post" id="form_search">
+            {% csrf_token %}
+            <input type="hidden" id="page" name="page" value="{{list.number}}">
+            <input type="hidden" id="per_page" name="per_page" value="{{list.paginator.per_page}}">
+            <div>
+                <span>
+                    {% if list.has_previous %}
+                    <input type="button" id="btn_prev" value="이전">
+                    {% endif %}
+                    {{list.number}}/{{list.paginator.num_pages}}페이지
+                    {% if list.has_next %}
+                    <input type="button" id="btn_next" value="다음">
+                    {% endif %}
+                </span>
+                <span>
+                    <input type="number" id="go_page_number" namge="go_page_number" value="{{list.number}}" min="{{list.paginator.page_range.start}}" max="{{list.paginator.page_range.stop|add:'-1'}}" style="width: 30px;">
+                    페이지로
+                    <input type="button" id="btn_go" value="이동">
+                </span>
+            </div>
+            <label>
+                <span>페이지 당 글 수</span>
+                <select id="select_per_page" name="select_per_page">
+                    {% for page in per_page_list %}
+                    {% if list.paginator.per_page == page %}
+                    <option value="{{page}}" selected="selected">{{page}}</option>
+                    {% else %}
+                    <option value="{{page}}">{{page}}</option>
+                    {% endif %}
+                    {% endfor %}
+                </select>
+            </label>
+</form>
         <table>
             <tr>
                 <th width="30">id</th>
+                <th width="30">썸네일</th>
                 <th width="500">제목</th>
-                <th width="150">노래 제목</th>
-                <th width="100">작곡자</th>
-                <th width="100">캐릭터</th>
-                <th width="100">MMD 제작자</th>
-                <th width="100">가사</th>
-                <th width="100">저장 URL</th>
+                <th width="200">노래 / 캐릭터</th>
+                <th width="150">기타</th>
             </tr>
             {% for item in list %}
             <tr>
                 <td style="text-align: center;">{{item.id}}</td>
-                <td><a href="{{item.url}}" target="_blank">{{item.title}}</a></td>
-                <td style="text-align: center;">{{item.song_title}}</td>
-                <td style="text-align: center;">{{item.song_composer}}</td>
-                <td style="text-align: center;">{{item.character}}</td>
-                <td style="text-align: center;">{{item.creator}}</td>
-                <td style="text-align: center;"><a href="{{item.lyrics_url}}" target="_blank">링크</a></td>
-                <td style="text-align: center;"><a href="{{item.saved_url}}" target="_blank">링크</a></td>
+                {% if item.url_type == 'youtube' %}
+                <td>
+                    <!--
+                    <img src="https://img.youtube.com/vi/{{item.url}}/sddefault.jpg" style="max-width: 150px; max-height: 150px; width: auto; height: auto;"></img>
+                    -->
+                    <img src="https://img.youtube.com/vi/{{item.url}}/hqdefault.jpg" style="max-width: 150px; max-height: 150px; width: auto; height: auto;"></img>
+                </td>
+                {% else %}
+                <td><img src="" style="max-width: 150px; max-height: 150px; width: auto; height: auto;"></img></td>
+                {% endif %}
+                <td>
+                    <div>
+                        {% if item.url_type == 'youtube' %}
+                        <a href="https://www.youtube.com/watch?v={{item.url}}" target="_blank">{{item.title}}</a>
+                        {% else %}
+                        <a href="{{item.url}}" target="_blank">{{item.title}}</a>
+                        {% endif %}
+                    </div>
+                    <div style="margin-top: 5px;">
+                        <a href="{{item.maker.url}}" target="_blank">{{item.maker.name}}</a>
+                    </div>
+                </td>
+                <td style="text-align: center;">
+                    <div>{{item.song.title}}</div>
+                    <div style="margin-top: 5px;">
+                        <span>{{item.character.name}}</span><span>({{item.model.name}})</span>
+                    </div>
+                </td>
+                <td style="text-align: center;">
+                    <div><a href="{{item.song.lyrics_url}}" target="_blank">가사</a></div>
+                    <div style="margin-top: 5px;">
+                        <a href="{{item.saved_url}}" target="_blank">저장된 링크</a>
+                    </div>
+                </td>
             </tr>
             {% endfor %}
         </table>

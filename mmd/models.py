@@ -15,3 +15,46 @@ class MMDList(models.Model):
 
     def __str__(self) -> str:
         return str(self.title)
+
+class VocaloidSong(models.Model):
+    title = models.CharField(max_length=256)
+    composer = models.CharField(max_length=128)
+    lyrics_url = models.CharField(max_length=512, null=True)
+
+    def __str__(self) -> str:
+        return str(self.title)
+
+class MMDCharacter(models.Model):
+    name = models.CharField(max_length=32)
+    name_original = models.CharField(max_length=32)
+    name_eng = models.CharField(max_length=32)
+
+    def __str__(self) -> str:
+        return str(self.name)
+
+class MMDModel(models.Model):
+    name = models.CharField(max_length=32)
+
+    def __str__(self) -> str:
+        return str(self.name)
+
+class MMDMaker(models.Model):
+    name = models.CharField(max_length=32)
+    url = models.CharField(max_length=512, null=True)
+
+    def __str__(self) -> str:
+        return str(self.name)
+
+class MMDMovie(models.Model):
+    title = models.CharField(max_length=256)
+    song = models.ForeignKey(VocaloidSong, on_delete=models.CASCADE)
+    character = models.ForeignKey(MMDCharacter, on_delete=models.CASCADE)
+    model = models.ForeignKey(MMDModel, on_delete=models.CASCADE)
+    maker = models.ForeignKey(MMDMaker, on_delete=models.CASCADE)
+    url_type = models.CharField(max_length=16, default='youtube')
+    url = models.CharField(max_length=512)
+    saved_url = models.CharField(max_length=512, null=True)
+
+    def __str__(self) -> str:
+        return str(self.title)
+
