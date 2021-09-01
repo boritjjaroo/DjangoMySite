@@ -24,6 +24,13 @@ def index(request):
         item_info.article_no = item.article_no
         item_info.article_confirm_ymd = land_item.confirm_day
         item_info.price = land_item.price
+        if land_item.area == 0:
+            item_info.price_per_area = 0
+        else:
+            item_info.price_per_area = int(land_item.price / land_item.area * 3.3)
+        item_info.area = land_item.area
+        item_info.building_area = land_item.building_area
+        item_info.total_floor_area = land_item.total_floor_area
         item_info.address = land_item.address
         item_info.memo = item.memo
         result_list.append(item_info)

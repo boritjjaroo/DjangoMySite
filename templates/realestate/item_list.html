@@ -27,7 +27,10 @@
                 <td><img src="{% static 'pic/realestate/'' %}{{item.article_no}}.png" style="max-width: 150px; max-height: 150px; width: auto; height: auto;"></td>
                 <td style="text-align: center;"><a href="https://new.land.naver.com/houses?articleNo={{item.article_no}}" target="_blank">{{item.article_no}}</a></td>
                 <td style="text-align: center;">{{item.article_confirm_ymd}}</td>
-                <td style="text-align: right;">{{item.price|intcomma}}만원</td>
+                <td style="text-align: right;">
+                    <div>{{item.price|intcomma}}만원</div>
+                    <div>({{item.price_per_area|intcomma}}만원/평)</div>
+                </td>
                 <td><a href="https://map.naver.com/v5/search/{{item.address}}" target="_blank">{{item.address}}</a></td>
                 <td>{{item.memo|mark}}</td>
             </tr>
