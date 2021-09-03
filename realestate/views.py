@@ -5,6 +5,7 @@ import time
 import json
 
 from .models import MyLandItem
+from .models import LocationCode
 from .ItemInfo import ItemInfo
 import naver.land as nl
 
@@ -127,11 +128,14 @@ def naver(request):
             result_list.append(land_item)
 
     result_list.sort(key=lambda item: item.address)
+
+    location_code = LocationCode.objects.order_by('location')
+
     context = {
         'list': result_list,
         'page': page,
         'is_more_data': is_more_data,
-        'location_code_list': nl.location_code,
+        'location_code_list': location_code,
         'building_type_list': nl.building_type,
         'cur_location': cur_location,
         'building_types': building_types,

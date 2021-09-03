@@ -103,11 +103,11 @@
                 <label>
                     <span>지역</span>
                     <select name="location">
-                        {% for item in location_code_list.items %}
-                        {% if cur_location == item.1 %}
-                        <option value="{{item.1}}" selected="selected">{{item.0}}</option>
+                        {% for item in location_code_list %}
+                        {% if cur_location == item.code %}
+                        <option value="{{item.code}}" selected="selected">{{item.location}}</option>
                         {% else %}
-                        <option value="{{item.1}}">{{item.0}}</option>
+                        <option value="{{item.code}}">{{item.location}}</option>
                         {% endif %}
                         {% endfor %}
                     </select>

@@ -11,4 +11,10 @@ class MyLandItem(models.Model):
 
     def __str__(self) -> str:
         return str(self.article_no)
-        
+
+class LocationCode(models.Model):
+    location = models.CharField(max_length=128)
+    code = models.CharField(max_length=16)
+
+    def __str__(self) -> str:
+        return str(self.location)
