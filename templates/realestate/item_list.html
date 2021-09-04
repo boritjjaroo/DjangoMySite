@@ -33,9 +33,11 @@
             </tr>
             {% for item in list %}
             <tr>
-                <td style="text-align: center;">
+                {% if item.count > 0 %}
+                <td rowspan="{{item.count}}" style="text-align: center;">
                     <a href="/realestate/{{item.id}}/">{{item.id}}</a>
                 </td>
+                {% endif %}
                 {% if item.count > 0 %}
                 <td rowspan="{{item.count}}">
                     <img src="{% static 'pic/realestate/' %}{{item.article_no}}.png" style="max-width: 150px; max-height: 150px; width: auto; height: auto;">
