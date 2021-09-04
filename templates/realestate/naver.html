@@ -12,6 +12,22 @@
         <script src="{% static 'js/common.js' %}"></script>
         <script type="text/javascript">
             $(function(){
+                $('#btn_dandok').click(function() {
+                    $('#DDDGG').prop("checked", true);
+                    $('#JWJT').prop("checked", true);
+                    $('#HOJT').prop("checked", true);
+                    $('#TJ').prop("checked", false);
+                    $('#building_type_ddonly').prop("checked", true);
+                    $('#name_except_filter').val('다가구,원룸')
+                });
+                $('#btn_daeji').click(function() {
+                    $('#DDDGG').prop("checked", false);
+                    $('#JWJT').prop("checked", false);
+                    $('#HOJT').prop("checked", false);
+                    $('#TJ').prop("checked", true);
+                    $('#building_type_ddonly').prop("checked", false);
+                    $('#name_except_filter').val('전,답,임야,과수원')
+                });
                 $('#btn_submit').click(function() {
                     $('#page').attr('value', 1)
                     $('#form_search').submit();
@@ -119,9 +135,9 @@
                         <label>
                             <span>{{item.0}}</span>
                             {% if item.1 in building_types %}
-                            <input type="checkbox" name="building_type" value="{{item.1}}" checked>
+                            <input type="checkbox" id="{{item.1}}" name="building_type" value="{{item.1}}" checked>
                             {% else %}
-                            <input type="checkbox" name="building_type" value="{{item.1}}">
+                            <input type="checkbox" id="{{item.1}}" name="building_type" value="{{item.1}}">
                             {% endif %}
                         </label>
                         {% endfor %}
@@ -130,9 +146,9 @@
                         <label>
                             <span>단독만</span>
                             {% if is_building_type_ddonly %}
-                            <input type="checkbox" name="building_type_ddonly" value="DDONLY" checked>
+                            <input type="checkbox" id="building_type_ddonly" name="building_type_ddonly" value="DDONLY" checked>
                             {% else %}
-                            <input type="checkbox" name="building_type_ddonly" value="DDONLY">
+                            <input type="checkbox" id="building_type_ddonly" name="building_type_ddonly" value="DDONLY">
                             {% endif %}
                         </label>
                     </div>
@@ -149,7 +165,7 @@
                 <div style="margin-top: 10px;">
                     <label>
                         <span>제목 제외 필터</span>
-                        <input type="text" name="name_except_filter" value="{{name_except_filter}}" style="width: 300px;">
+                        <input type="text" id="name_except_filter" name="name_except_filter" value="{{name_except_filter}}" style="width: 300px;">
                     </label>
                 </div>
                 <div style="margin-top: 10px;">
@@ -157,6 +173,14 @@
                         <span>특정 매물 확인</span>
                         <input type="text" name="article_no" value="" style="width: 300px;">
                     </label>
+                </div>
+                <div style="margin-top: 10px;">
+                    <span>
+                        <input type="button" id="btn_dandok" value="단독주택">
+                    </span>
+                    <span>
+                        <input type="button" id="btn_daeji" value="대지">
+                    </span>
                 </div>
                 <div style="margin-top: 10px;">
                     <input type="button" id="btn_submit" value="검색">
