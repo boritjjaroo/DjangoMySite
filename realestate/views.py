@@ -3,6 +3,7 @@ from django.shortcuts import render, redirect
 
 import time
 import json
+import os
 
 from .models import MyLandItem
 from .models import LocationCode
@@ -11,6 +12,7 @@ import naver.land as nl
 
 
 json_save_path = './realestate/json'
+land_image_path = './static/pic/realestate'
 
 # Create your views here.
 def index(request):
@@ -22,6 +24,7 @@ def index(request):
 
         item_info = ItemInfo()
         item_info.id = item.id
+        item_info.parent_id = item.parent_id
         item_info.article_no = item.article_no
         item_info.article_confirm_ymd = land_item.confirm_day
         item_info.price = land_item.price
@@ -34,9 +37,20 @@ def index(request):
         item_info.total_floor_area = land_item.total_floor_area
         item_info.address = land_item.address
         item_info.memo = item.memo
+        item_info.count = 0
         result_list.append(item_info)
 
     result_list.sort(key=lambda item: (item.address, item.article_no))
+
+    # 같은 항목 개수 세기
+    parent_item_info = ItemInfo()
+    for item_info in result_list:
+        if item_info.parent_id == 0:
+            item_info.count = 1
+            parent_item_info = item_info
+        elif item_info.parent_id == parent_item_info.id:
+            parent_item_info.count = parent_item_info.count + 1
+
     context = { 'list': result_list }
     return render(request, 'realestate/item_list.html', context)
 
@@ -45,11 +59,19 @@ def detail(request, listitem_id):
     json_path = f'{json_save_path}/{nl.LandItem.getJsonFileNameS(item.article_no, item.article_confirm_ymd)}'
     with open(json_path, 'r', encoding='utf-8') as json_file:
         json_object = json.load(json_file)
-    context = { 'item': item, 'json': json_object }
+
+    # 이미지 목록 가져오기
+    image_list = []
+    image_dir = land_image_path + '/' + item.article_no
+    if os.path.isdir(image_dir):
+        image_list = os.listdir(image_dir)
+
+    context = { 'item': item, 'json': json_object, 'image_list': image_list }
     return render(request, 'realestate/item_detail.html', context)
 
 def item_modify(request, listitem_id):
     item = MyLandItem.objects.get(id=listitem_id)
+    item.parent_id = request.POST.get('parent_id')
     item.memo = request.POST.get('memo')
     item.save()
     return redirect('realestate:index')

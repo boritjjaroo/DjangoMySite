@@ -3,6 +3,7 @@ from django.db import models
 # Create your models here.
 class MyLandItem(models.Model):
     article_no = models.CharField(max_length=16, unique=True)
+    parent_id = models.BigIntegerField(default=0)
     article_confirm_ymd = models.CharField(max_length=16)
     is_multi_family = models.BooleanField(null=True)
     is_new = models.BooleanField(default=True)

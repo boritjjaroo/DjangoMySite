@@ -2,6 +2,7 @@
 class ItemInfo:
     def __init__(self):
         id = 0
+        parent_id = 0
         image_path = ''
         article_no = ''
         article_confirm_ymd = ''
@@ -12,4 +13,5 @@ class ItemInfo:
         total_floor_area = 0.0
         address = ''
         memo = ''
+        count = 0
 

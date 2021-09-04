@@ -33,16 +33,35 @@
             </tr>
             {% for item in list %}
             <tr>
-                <td style="text-align: center;"><a href="/realestate/{{item.id}}/">{{item.id}}</a></td>
-                <td><img src="{% static 'pic/realestate/'' %}{{item.article_no}}.png" style="max-width: 150px; max-height: 150px; width: auto; height: auto;"></td>
-                <td style="text-align: center;"><a href="https://new.land.naver.com/houses?articleNo={{item.article_no}}" target="_blank">{{item.article_no}}</a></td>
+                <td style="text-align: center;">
+                    <a href="/realestate/{{item.id}}/">{{item.id}}</a>
+                </td>
+                {% if item.count > 0 %}
+                <td rowspan="{{item.count}}">
+                    <img src="{% static 'pic/realestate/' %}{{item.article_no}}.png" style="max-width: 150px; max-height: 150px; width: auto; height: auto;">
+                </td>
+                {% endif %}
+                <td style="text-align: center;">
+                    <a href="https://new.land.naver.com/houses?articleNo={{item.article_no}}" target="_blank">{{item.article_no}}</a>
+                </td>
                 <td style="text-align: center;">{{item.article_confirm_ymd}}</td>
                 <td style="text-align: right;">
                     <div>{{item.price|intcomma}}만원</div>
-                    <div>({{item.price_per_area|intcomma}}만원/평)</div>
+                    <div style="font-size: smaller;">({{item.price_per_area|intcomma}}만원/평)</div>
                 </td>
-                <td><a href="https://map.naver.com/v5/search/{{item.address}}" target="_blank">{{item.address}}</a></td>
-                <td>{{item.memo|mark}}</td>
+                {% if item.count > 0 %}
+                <td rowspan="{{item.count}}">
+                    <div>
+                        <a href="https://map.naver.com/v5/search/{{item.address}}" target="_blank">{{item.address}}</a>
+                    </div>
+                    <div style="margin-top: 5px;">대지면적 : {{item.area}}㎡ ({{item.area|pyung|floatformat}}평)</div>
+                    <div>건축면적 : {{item.building_area}}㎡ ({{item.building_area|pyung|floatformat}}평)</div>
+                    <div>연 면 적 : {{item.total_floor_area}}㎡ ({{item.total_floor_area|pyung|floatformat}}평)</div>
+                </td>
+                {% endif %}
+                {% if item.count > 0 %}
+                <td rowspan="{{item.count}}">{{item.memo|mark}}</td>
+                {% endif %}
             </tr>
             {% endfor %}
         </table>

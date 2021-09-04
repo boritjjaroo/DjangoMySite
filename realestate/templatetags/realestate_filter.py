@@ -8,3 +8,7 @@ register = template.Library()
 def mark(value):
     extensions = ["nl2br", "fenced_code"]
     return mark_safe(markdown.markdown(value, extensions=extensions))
+
+@register.filter()
+def pyung(value):
+    return value / 3.3
