@@ -9,6 +9,7 @@ from .models import MyLandItem
 from .models import LocationCode
 from .ItemInfo import ItemInfo
 import naver.land as nl
+import gov.molit as molit
 
 
 json_save_path = './realestate/json'
@@ -224,3 +225,77 @@ def multi(request):
         'result': result,
     }
     return HttpResponse(json.dumps(context), content_type="application/json")
+
+
+def price(request):
+    price_list = []
+    amount_average = 0
+    amount_min = 9999999999
+    amount_max = 0
+
+    search_location = request.POST.get('search_location')
+    search_category = request.POST.get('search_category')
+    search_year = request.POST.get('search_year')
+    filter_location = request.POST.get('filter_location')
+    filter_address = request.POST.get('filter_address')
+    filter_jimok = request.POST.get('filter_jimok')
+    filter_usage = request.POST.get('filter_usage')
+    filter_road = request.POST.get('filter_road')
+
+    #print(filter_location)
+
+    if search_location is not None:
+        search_results = molit.get_real_sale_price(search_category, search_location, search_year)
+
+        print(f'국토부 검색결과 {len(search_results)}개')
+        #print(search_results)
+
+        amount_sum = 0
+
+        for item in search_results:
+            if len(filter_location) > 0 and item.location != filter_location:
+                continue
+            if len(filter_address) > 0 and item.address != filter_address:
+                continue
+            if len(filter_jimok) > 0 and item.jimok != filter_jimok:
+                continue
+            if len(filter_usage) > 0 and item.region_usage != filter_usage:
+                continue
+            if len(filter_road) > 0 and item.road_length != filter_road:
+                continue
+
+            price_list.append(item)
+            amount_sum = amount_sum + item.amount_per_area
+            if amount_max < item.amount_per_area:
+                amount_max = item.amount_per_area
+            if item.amount_per_area < amount_min:
+                amount_min = item.amount_per_area
+
+    if len(price_list) > 0:
+        amount_average = round(amount_sum / len(price_list))
+    else:
+        amount_min = 0
+
+    #print(price_list)
+    price_list.sort(key=lambda item: (item.deal_month, item.deal_day), reverse=True)
+
+    location_code = LocationCode.objects.order_by('location')
+
+    context = {
+        'list': price_list,
+        'location_code_list': location_code,
+        'category_list': molit.search_category,
+        'search_location': search_location,
+        'search_category': search_category,
+        'search_year': search_year,
+        'filter_location': filter_location,
+        'filter_address': filter_address,
+        'filter_jimok': filter_jimok,
+        'filter_usage': filter_usage,
+        'filter_road': filter_road,
+        'amount_average': amount_average,
+        'amount_min': amount_min,
+        'amount_max': amount_max,
+    }
+
+    return render(request, 'realestate/price.html', context)

@@ -1,0 +1,141 @@
+{% load static %}
+{% load humanize %}
+{% load realestate_filter %}
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <link rel="stylesheet" type="text/css" href="{% static 'css/style.css' %}">
+        <style>
+        </style>
+        <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+        <script src="{% static 'js/common.js' %}"></script>
+        <script type="text/javascript">
+            $(function(){
+                $('#btn_submit').click(function() {
+                    $('#form_search').submit();
+                });
+                
+            });
+        </script>
+    </head>
+    <body>
+        <div>
+            <form action="{% url 'realestate:price' %}" method="post" id="form_search">
+                {% csrf_token %}
+                <label>
+                    <span>지역</span>
+                    <select name="search_location">
+                        {% for item in location_code_list %}
+                        {% if search_location == item.code %}
+                        <option value="{{item.code}}" selected="selected">{{item.location}}</option>
+                        {% else %}
+                        <option value="{{item.code}}">{{item.location}}</option>
+                        {% endif %}
+                        {% endfor %}
+                    </select>
+                </label>
+                <fieldset style="margin-top: 10px;">
+                    <legend>부동산 종류</legend>
+                    <div>
+                        {% for item in category_list.items %}
+                            {% if not search_category and forloop.counter == 3 %}
+                        <input type="radio" id="{{item.1}}" name="search_category" value="{{item.1}}" checked>
+                            {% elif item.1 == search_category %}
+                        <input type="radio" id="{{item.1}}" name="search_category" value="{{item.1}}" checked>
+                            {% else %}
+                        <input type="radio" id="{{item.1}}" name="search_category" value="{{item.1}}">
+                            {% endif %}
+                        <label for="search_category">{{item.0}}</label>
+                        {% endfor %}
+                    </div>
+                </fieldset>
+                <div style="margin-top: 10px;">
+                    <label>
+                        <span>검색연도</span>
+                        <input type="number" name="search_year" value="{{search_year|default_if_none:'2021'}}" style="width: 60px;">년
+                    </label>
+                </div>
+                <div style="margin-top: 10px;">
+                    <label>
+                        <span>지역 필터</span>
+                        <input type="text" id="filter_location" name="filter_location" value="{{filter_location|default_if_none:''}}" style="width: 300px;">
+                    </label>
+                </div>
+                <div style="margin-top: 10px;">
+                    <label>
+                        <span>지번 필터</span>
+                        <input type="text" name="filter_address" value="{{filter_address|default_if_none:''}}" style="width: 300px;">
+                    </label>
+                </div>
+                <div style="margin-top: 10px;">
+                    <label>
+                        <span>지목 필터</span>
+                        <input type="text" name="filter_jimok" value="{{filter_jimok|default_if_none:''}}" style="width: 300px;">
+                    </label>
+                </div>
+                <div style="margin-top: 10px;">
+                    <label>
+                        <span>용도 필터</span>
+                        <input type="text" name="filter_usage" value="{{filter_usage|default_if_none:''}}" style="width: 300px;">
+                    </label>
+                </div>
+                <div style="margin-top: 10px;">
+                    <label>
+                        <span>도로조건 필터</span>
+                        <input type="text" name="filter_road" value="{{filter_road|default_if_none:''}}" style="width: 300px;">
+                    </label>
+                </div>
+                <div style="margin-top: 10px;">
+                    <input type="button" id="btn_submit" value="검색">
+                </div>
+            </form>
+        </div>
+        <div>
+            검색결과 : 총 {{list|length}} 건
+        </div>
+        <div>
+            계약금액: {{amount_min|intcomma}}(최소) ~ {{amount_average|intcomma}}(평균) ~ {{amount_max|intcomma}}(최대) 만원/평
+        </div>
+        <div>
+            <table>
+                <tr>
+                    <th style="width: 150px; text-align: center;">주소</th>
+                    <th style="width: 150px; text-align: center;">지목/용도</th>
+                    <th style="width: 80px; text-align: center;">계약일</th>
+                    <th style="width: 80px; text-align: center;">도로조건</th>
+                    <th style="width: 120px; text-align: center;">면적</th>
+                    <th style="width: 60px; text-align: center;">건축연도</th>
+                    <th style="width: 120px; text-align: center;">건축구조</th>
+                    <th style="width: 80px; text-align: center;">금액</th>
+                    <th style="text-align: center;">취소날짜</th>
+                </tr>
+                {% if list %}
+                {% for item in list %}
+                {% if item.cancel_ymd %}
+                <tr style="background-color: lightgrey;">
+                {% else %}
+                <tr>
+                {% endif %}
+                    <td>{{item.location}} {{item.address}}</td>
+                    <td style="text-align: center;">{{item.jimok}}<br>{{item.region_usage}}</td>
+                    <td style="text-align: center;">{{item.deal_month}}-{{item.deal_day}}</td>
+                    <td style="text-align: center;">{{item.road_length}}</td>
+                    <td>
+                        대&nbsp;&nbsp;&nbsp;지: {{item.area|intcomma}}㎡<br>
+                        연면적: {{item.total_building_area}}㎡<br>
+                    </td>
+                    <td style="text-align: center;">{{item.build_year}}년</td>
+                    <td style="text-align: center;">{{item.structure|default_if_none:""}}</td>
+                    <td style="text-align: right;">
+                        {{item.amount|intcomma}}만원<br>
+                        <span style="font-size: smaller;">({{item.amount_per_area|intcomma}}만원/평)</span>
+                    </td>
+                    <td>{{item.cancel_ymd|default_if_none:""}}</td>
+                </tr>
+                {% endfor %}
+                {% endif %}
+            </table>
+        </div>
+    </body>
+</html>

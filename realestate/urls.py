@@ -11,4 +11,5 @@ urlpatterns = [
     path('check/', views.check, name='check'),
     path('favorite/', views.favorite, name='favorite'),
     path('multi/', views.multi, name='multi'),
+    path('price/', views.price, name='price'),
 ]
