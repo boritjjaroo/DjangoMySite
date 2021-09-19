@@ -50,6 +50,7 @@
                 <td style="text-align: right;">
                     <div>{{item.price|intcomma}}만원</div>
                     <div style="font-size: smaller;">({{item.price_per_area|intcomma}}만원/평)</div>
+                    <div style="font-size: smaller;">({{item.initial_price}})</div>
                 </td>
                 {% if item.count > 0 %}
                 <td rowspan="{{item.count}}">
@@ -59,6 +60,7 @@
                     <div style="margin-top: 5px;">대지면적 : {{item.area}}㎡ ({{item.area|pyung|floatformat}}평)</div>
                     <div>건축면적 : {{item.building_area}}㎡ ({{item.building_area|pyung|floatformat}}평)</div>
                     <div>연 면 적 : {{item.total_floor_area}}㎡ ({{item.total_floor_area|pyung|floatformat}}평)</div>
+                    <div>건물연한 : {{item.build_years}}년</div>
                 </td>
                 {% endif %}
                 {% if item.count > 0 %}

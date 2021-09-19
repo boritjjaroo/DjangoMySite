@@ -7,11 +7,13 @@ class ItemInfo:
         article_no = ''
         article_confirm_ymd = ''
         price = 0
+        initial_price = ''
         price_per_area = 0
         area = 0.0
         building_area = 0.0
         total_floor_area = 0.0
         address = ''
+        build_years = 0
         memo = ''
         count = 0
 

@@ -5,6 +5,7 @@ class MyLandItem(models.Model):
     article_no = models.CharField(max_length=16, unique=True)
     parent_id = models.BigIntegerField(default=0)
     article_confirm_ymd = models.CharField(max_length=16)
+    initial_price = models.CharField(max_length=32, null=True)
     is_multi_family = models.BooleanField(null=True)
     is_new = models.BooleanField(default=True)
     is_favorite = models.BooleanField(default=False)

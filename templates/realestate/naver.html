@@ -235,7 +235,10 @@
                     </td>
                     <td style="text-align: center;"><a href="https://new.land.naver.com/houses?articleNo={{item.id}}" target="_blank">{{item.id}}</a></td>
                     <td style="text-align: center;">{{item.name}}<br>({{item.subname}})</td>
-                    <td style="text-align: right;">{{item.price|intcomma}}만원</td>
+                    <td style="text-align: right;">
+                        <div>{{item.price|intcomma}}만원</div>
+                        <div style="font-size: smaller;">({{item.initial_price}})</div>
+                    </td>
                     <td>
                         {{item.all_ho_count}}세대<br>
                         대지:{{item.area}}㎡<br>

@@ -22,6 +22,12 @@ def index(request):
 
     for item in my_list:
         land_item = nl.LandItem.createFromJson(json_save_path, item.article_no, item.article_confirm_ymd)
+        land_item.calcBuildYears()
+
+        if item.initial_price is None:
+            land_item.getPriceHistory()
+            item.initial_price = land_item.initial_price
+            item.save()
 
         item_info = ItemInfo()
         item_info.id = item.id
@@ -29,6 +35,7 @@ def index(request):
         item_info.article_no = item.article_no
         item_info.article_confirm_ymd = land_item.confirm_day
         item_info.price = land_item.price
+        item_info.initial_price = item.initial_price
         if land_item.area == 0:
             item_info.price_per_area = 0
         else:
@@ -37,6 +44,7 @@ def index(request):
         item_info.building_area = land_item.building_area
         item_info.total_floor_area = land_item.total_floor_area
         item_info.address = land_item.address
+        item_info.build_years = land_item.build_years
         item_info.memo = item.memo
         item_info.count = 0
         result_list.append(item_info)
@@ -143,6 +151,13 @@ def naver(request):
                 time.sleep(0.3)
                 land_item.parseFromID(my_item.article_no)
                 land_item.saveJson(json_save_path)
+
+            if my_item.initial_price is None:
+                land_item.getPriceHistory()
+                my_item.initial_price = land_item.initial_price
+                my_item.save()
+            else:
+                land_item.initial_price = my_item.initial_price
 
             land_item.is_new = my_item.is_new
             land_item.is_favorite = my_item.is_favorite
