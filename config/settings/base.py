@@ -34,6 +34,7 @@ ALLOWED_HOSTS = []
 INSTALLED_APPS = [
     'realestate.apps.RealestateConfig',
     'mmd.apps.MmdConfig',
+    'accbook.apps.AccbookConfig',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',

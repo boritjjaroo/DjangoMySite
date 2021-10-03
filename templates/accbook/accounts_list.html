@@ -1,0 +1,226 @@
+{% load static %}
+{% load humanize %}
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <link rel="stylesheet" type="text/css" href="{% static 'css/style.css' %}">
+        <style>
+            th { text-align: center;}
+        </style>
+        <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+        <script src="{% static 'js/common.js' %}"></script>
+        <script type="text/javascript">
+
+            var selected_id = null;
+
+            $(function(){
+
+                document.getElementById('begin_date').valueAsDate = new Date();
+
+                $('#btn_reset_id').click(function() {
+                    $('#id').val("");
+                    $('#btn_modify').val("추가");
+                    $('#'+selected_id).css('background-color', 'transparent');
+                });
+
+                $('#btn_modify').click(function() {
+                    $('#form_modify').submit();
+                });
+
+                $('table.list tr').click(function() {
+                    if (selected_id) {
+                        $('#'+selected_id).css('background-color', 'transparent');
+                        $('#btn_modify').val("추가");
+
+                        $('#id').val("");
+                        $('#code1').val("00");
+                        $('#name1').val("");
+                        $('#order1').val("999");
+                        $('#code2').val("000");
+                        $('#name2').val("");
+                        $('#order2').val("999");
+                        $('#code3').val("000");
+                        $('#name3').val("");
+                        $('#order3').val("999");
+                        $('#begin_date').val("");
+                        $('#end_date').val("");
+                        $('#is_slip').prop('checked', false);
+                        $('#is_temporary').prop('checked', false);
+                        $('#bank_type').val("00");
+                        $('#deposit_type').val("00");
+                    }
+                    selected_id = $(this).attr('id');
+                    if (selected_id) {
+                        $(this).css('background-color', 'bisque');
+                        $('#btn_modify').val("수정");
+
+                        $('#id').val($(this).find('td.id').text());
+                        $('#code1').val($(this).find('td.code1').text());
+                        $('#name1').val($(this).find('td.name1').text());
+                        $('#order1').val($(this).find('td.order1').text());
+                        $('#code2').val($(this).find('td.code2').text());
+                        $('#name2').val($(this).find('td.name2').text());
+                        $('#order2').val($(this).find('td.order2').text());
+                        $('#code3').val($(this).find('td.code3').text());
+                        $('#name3').val($(this).find('td.name3').text());
+                        $('#order3').val($(this).find('td.order3').text());
+                        $('#begin_date').val($(this).find('td.begin_date').text());
+                        $('#end_date').val($(this).find('td.end_date').text());
+                        $('#is_slip').prop('checked', $(this).find('td.is_slip').text()=="True");
+                        $('#is_temporary').prop('checked', $(this).find('td.is_temporary').text()=="True");
+                        $('#bank_type').val($(this).find('td.bank_type').text());
+                        $('#deposit_type').val($(this).find('td.deposit_type').text());
+                    }
+                });
+            });
+        </script>
+    </head>
+    <body>
+        <h3>계정과목 검색조건</h3>
+        <form action="{% url 'accbook:accounts' %}" method="post" id="form_search">
+            {% csrf_token %}
+        </form>
+        <h3>계정과목 목록</h3>
+        <table class="list">
+            <tr>
+                <th width="30">id</th>
+                <th width="30">코드1</th>
+                <th width="100">이름1</th>
+                <th width="25">순서1</th>
+                <th width="30">코드2</th>
+                <th width="100">이름2</th>
+                <th width="25">순서2</th>
+                <th width="30">코드3</th>
+                <th width="100">이름3</th>
+                <th width="25">순서3</th>
+                <th width="70">시작날짜</th>
+                <th width="70">종료날짜</th>
+                <th width="30">전표생성가능</th>
+                <th width="30">일회성</th>
+                <th width="30">금융권</th>
+                <th width="30">계좌종류</th>
+            </tr>
+            {% for item in list %}
+            <tr id="{{item.id}}">
+                <td class="id" style="text-align: center;">{{item.id}}</td>
+                <td class="code1" style="text-align: center;">{{item.code1}}</td>
+                <td class="name1">{{item.name1}}</td>
+                <td class="order1" style="text-align: center;">{{item.order1}}</td>
+                <td class="code2" style="text-align: center;">{{item.code2}}</td>
+                <td class="name2">{{item.name2}}</td>
+                <td class="order2" style="text-align: center;">{{item.order2}}</td>
+                <td class="code3" style="text-align: center;">{{item.code3}}</td>
+                <td class="name3">{{item.name3}}</td>
+                <td class="order3" style="text-align: center;">{{item.order3}}</td>
+                <td class="begin_date" style="text-align: center;">{{item.begin_date|date:"Y-m-d"}}</td>
+                <td class="end_date" style="text-align: center;">{{item.end_date|date:"Y-m-d"}}</td>
+                <td class="is_slip" style="text-align: center;">{{item.is_slip}}</td>
+                <td class="is_temporary" style="text-align: center;">{{item.is_temporary}}</td>
+                <td class="bank_type" style="text-align: center;">{{item.bank_type}}</td>
+                <td class="deposit_type" style="text-align: center;">{{item.deposit_type}}</td>
+            </tr>
+            {% endfor %}
+        </table>
+        <h3>계정과목 수정</h3>
+        <form action="{% url 'accbook:accounts_modify' %}" method="post" id="form_modify">
+            {% csrf_token %}
+            <table>
+                <tr>
+                    <th width="50">id</th>
+                    <th width="30">코드1</th>
+                    <th width="100">이름1</th>
+                    <th width="30">순서1</th>
+                    <th width="30">코드2</th>
+                    <th width="100">이름2</th>
+                    <th width="30">순서2</th>
+                    <th width="30">코드3</th>
+                    <th width="100">이름3</th>
+                    <th width="30">순서3</th>
+                    <th width="70">시작날짜</th>
+                    <th width="70">종료날짜</th>
+                    <th width="30">전표생성가능</th>
+                    <th width="30">일회성</th>
+                    <th width="30">금융권</th>
+                    <th width="30">계좌종류</th>
+                </tr>
+                <tr>
+                    <td>
+                        <input type="text" id="id" name="id" style="width: 30px;" readonly>
+                    </td>
+                    <td>
+                        <input type="text" id="code1" name="code1" value="00" style="width: 30px;">
+                    </td>
+                    <td>
+                        <input type="text" id="name1" name="name1" value="" style="width: 150px;">
+                    </td>
+                    <td>
+                        <input type="text" id="order1" name="order1" value="999" style="width: 25px;">
+                    </td>
+                    <td>
+                        <input type="text" id="code2" name="code2" value="000" style="width: 30px;">
+                    </td>
+                    <td>
+                        <input type="text" id="name2" name="name2" value="" style="width: 150px;">
+                    </td>
+                    <td>
+                        <input type="text" id="order2" name="order2" value="999" style="width: 25px;">
+                    </td>
+                    <td>
+                        <input type="text" id="code3" name="code3" value="000" style="width: 30px;">
+                    </td>
+                    <td>
+                        <input type="text" id="name3" name="name3" value="" style="width: 150px;">
+                    </td>
+                    <td>
+                        <input type="text" id="order3" name="order3" value="999" style="width: 25px;">
+                    </td>
+                    <td>
+                        <input type="date" id="begin_date" name="begin_date">
+                    </td>
+                    <td>
+                        <input type="date" id="end_date" name="end_date">
+                    </td>
+                    <td>
+                        <input type="checkbox" id="is_slip" name="is_slip">
+                    </td>
+                    <td>
+                        <input type="checkbox" id="is_temporary" name="is_temporary" value="ch">
+                    </td>
+                    <td>
+                        <input type="text" id="bank_type" name="bank_type" value="00" style="width: 50px;">
+                    </td>
+                    <td>
+                        <input type="text" id="deposit_type" name="deposit_type" value="00" style="width: 50px;">
+                    </td>
+                </tr>
+            </table>
+            <div style="margin-top: 10px;">
+                <input type="button" id="btn_reset_id" value="id초기화">
+                <input type="button" id="btn_modify" value="추가">
+            </div>
+            <div>
+                <table style="border-collapse: collapse; border: none;">
+                    <tr>
+                        <td style="width: 200px; border: none;">
+                            <div>금융권
+                                <div>10 : 1금융권</div>
+                                <div>20 : 2금융권</div>
+                                <div>30 : 증권사</div>
+                                <div>90 : 기타</div>
+                            </div>
+                        </td>
+                        <td style="border: none;">
+                            <div>계좌종류
+                                <div>10 : 요구불</div>
+                                <div>20 : 정기예금</div>
+                                <div>30 : 정기적금</div>
+                                <div>90 : 기타</div>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </form>
+    </body>
+</html>
