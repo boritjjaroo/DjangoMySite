@@ -10,14 +10,8 @@
 
 <body>
     <div>
-        <form action="{% url 'realestate:item_modify' item.id %}" method="post">
+        <form action="{% url 'realestate:item_modify2' item.id %}" method="post">
             {% csrf_token %}
-            <div>
-                <label>
-                    <span>부모 ID</span>
-                    <input type="text" name="parent_id" value="{{item.parent_id}}" style="width: 100px;">
-                </label>
-            </div>
             <div style="margin-top: 10px;"><textarea name="memo" id="memo" rows="5" style="width: 100%; max-width: 100%;">{{item.memo}}</textarea></div>
             <div style="margin-top: 10px;"><input type="submit" value="수정"></div>
         </form>
@@ -26,15 +20,20 @@
         <div>사진({{image_list|length}}개)</div>
         <div>
             {% for image in image_list %}
-            <a href="{% static 'pic/realestate/' %}{{item.article_no}}/{{image}}" target="_blank">
-                <img src="{% static 'pic/realestate/' %}{{item.article_no}}/{{image}}" style="max-width: 150px; max-height: 150px; width: auto; height: auto;">
+            <a href="{% static 'pic/realestate/' %}{{item.file_prefix}}/{{image}}" target="_blank">
+                <img src="{% static 'pic/realestate/' %}{{item.file_prefix}}/{{image}}" style="max-width: 150px; max-height: 150px; width: auto; height: auto;">
             </a>
             {% endfor %}
         </div>
     </div>
-    <pre>
-        {{json}}
-    </pre>
+    <div>
+        <div>첨부파일({{file_list|length}}개)</div>
+        <div>
+            {% for file in file_list %}
+            <a href="{% static 'file/realestate/' %}{{item.file_prefix}}/{{file}}" target="_blank">{{file}}</a>
+            {% endfor %}
+        </div>
+    </div>
 </body>
 
 </html>

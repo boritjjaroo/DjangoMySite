@@ -1,3 +1,4 @@
+from .models import Realestate
 
 class ItemInfo:
     def __init__(self):
@@ -16,4 +17,10 @@ class ItemInfo:
         build_years = 0
         memo = ''
         count = 0
+        declared_value = 0
+        declared_value_date = None
 
+class ItemInfo2:
+    def __init__(self):
+        realestate = None
+        mylist = []

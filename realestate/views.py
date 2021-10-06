@@ -5,6 +5,7 @@ import time
 import json
 import os
 
+from .models import Realestate
 from .models import MyLandItem
 from .models import LocationCode
 from .ItemInfo import ItemInfo
@@ -14,6 +15,7 @@ import gov.molit as molit
 
 json_save_path = './realestate/json'
 land_image_path = './static/pic/realestate'
+land_file_path = './static/file/realestate'
 
 # Create your views here.
 def index(request):
@@ -47,6 +49,9 @@ def index(request):
         item_info.build_years = land_item.build_years
         item_info.memo = item.memo
         item_info.count = 0
+        if item.declared_value is not None:
+            item_info.declared_value = item.declared_value
+            item_info.declared_value_date = item.declared_value_date
         result_list.append(item_info)
 
     result_list.sort(key=lambda item: (item.address, item.article_no))
@@ -63,6 +68,28 @@ def index(request):
     context = { 'list': result_list }
     return render(request, 'realestate/item_list.html', context)
 
+def index2(request):
+    result_list = []
+    realestate_list = Realestate.objects.order_by('address_jibun')
+
+    for item in realestate_list:
+        my_list = MyLandItem.objects.filter(realestate_id=item.id).order_by('article_no')
+        iteminfo = ItemInfo()
+        iteminfo.realestate = item
+
+        # 가격정보 null 일 경우 json 파싱해서 값 가져오기
+        for myitem in my_list:
+            if myitem.price is None or myitem.price == 0:
+                land_item = nl.LandItem.createFromJson(json_save_path, myitem.article_no, myitem.article_confirm_ymd)
+                myitem.price = land_item.price
+                myitem.save()
+
+        iteminfo.mylist = my_list
+        result_list.append(iteminfo)
+
+    context = { 'list': result_list }
+    return render(request, 'realestate/item_list2.html', context)
+
 def detail(request, listitem_id):
     item = MyLandItem.objects.get(id=listitem_id)
     json_path = f'{json_save_path}/{nl.LandItem.getJsonFileNameS(item.article_no, item.article_confirm_ymd)}'
@@ -75,12 +102,54 @@ def detail(request, listitem_id):
     if os.path.isdir(image_dir):
         image_list = os.listdir(image_dir)
 
-    context = { 'item': item, 'json': json_object, 'image_list': image_list }
+    pretty_json = json.dumps(json_object, indent=4, ensure_ascii=False)
+    context = { 'item': item, 'json': pretty_json, 'image_list': image_list }
     return render(request, 'realestate/item_detail.html', context)
+
+def detail2(request, listitem_id):
+    item = Realestate.objects.get(id=listitem_id)
+
+    # 이미지 목록 가져오기
+    image_list = []
+    if item.file_prefix:
+        image_dir = land_image_path + '/' + item.file_prefix + '/'
+        if os.path.isdir(image_dir):
+            image_list = os.listdir(image_dir)
+
+    # 첨부파일 목록 가져오기
+    file_list = []
+    if item.file_prefix:
+        file_dir = land_file_path + '/' + item.file_prefix + '/'
+        if os.path.isdir(file_dir):
+            file_list = os.listdir(file_dir)
+
+    context = { 'item': item, 'image_list': image_list, 'file_list': file_list }
+    return render(request, 'realestate/item_detail2.html', context)
+
+
+def json_view(request, article_no):
+    json_object = None
+    json_path = f'{json_save_path}/'
+    json_list = os.listdir(json_path)
+    for json_file in json_list:
+        if json_file.startswith(str(article_no)):
+            file_path = f'{json_save_path}/{json_file}'
+            with open(file_path, 'r', encoding='utf-8') as json_file:
+                json_object = json.load(json_file)
+            break
+    pretty_json = json.dumps(json_object, indent=4, ensure_ascii=False)
+    context = { 'json': pretty_json }
+    return render(request, 'realestate/json_view.html', context)
 
 def item_modify(request, listitem_id):
     item = MyLandItem.objects.get(id=listitem_id)
     item.parent_id = request.POST.get('parent_id')
+    item.memo = request.POST.get('memo')
+    item.save()
+    return redirect('realestate:index')
+
+def item_modify2(request, listitem_id):
+    item = Realestate.objects.get(id=listitem_id)
     item.memo = request.POST.get('memo')
     item.save()
     return redirect('realestate:index')

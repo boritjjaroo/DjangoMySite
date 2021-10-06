@@ -138,3 +138,6 @@ realestate/json/*
 # Not necessary static data
 static/pic/realestate/*
 !static/pic/realestate/empty.png
+
+static/file/realestate/*
+!static/file/realestate/empty.txt
