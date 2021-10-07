@@ -4,12 +4,14 @@ from django.shortcuts import render, redirect
 import time
 import json
 import os
+import datetime
+from decimal import *
 
-from .models import Realestate
-from .models import MyLandItem
-from .models import LocationCode
-from .ItemInfo import ItemInfo
+from .models import *
+from .ItemInfo import *
+from .util import *
 import naver.land as nl
+import naver.map as nm
 import gov.molit as molit
 
 
@@ -17,64 +19,13 @@ json_save_path = './realestate/json'
 land_image_path = './static/pic/realestate'
 land_file_path = './static/file/realestate'
 
-# Create your views here.
 def index(request):
-    my_list = MyLandItem.objects.filter(is_favorite=True)
     result_list = []
-
-    for item in my_list:
-        land_item = nl.LandItem.createFromJson(json_save_path, item.article_no, item.article_confirm_ymd)
-        land_item.calcBuildYears()
-
-        if item.initial_price is None:
-            land_item.getPriceHistory()
-            item.initial_price = land_item.initial_price
-            item.save()
-
-        item_info = ItemInfo()
-        item_info.id = item.id
-        item_info.parent_id = item.parent_id
-        item_info.article_no = item.article_no
-        item_info.article_confirm_ymd = land_item.confirm_day
-        item_info.price = land_item.price
-        item_info.initial_price = item.initial_price
-        if land_item.area == 0:
-            item_info.price_per_area = 0
-        else:
-            item_info.price_per_area = int(land_item.price / land_item.area * 3.3)
-        item_info.area = land_item.area
-        item_info.building_area = land_item.building_area
-        item_info.total_floor_area = land_item.total_floor_area
-        item_info.address = land_item.address
-        item_info.build_years = land_item.build_years
-        item_info.memo = item.memo
-        item_info.count = 0
-        if item.declared_value is not None:
-            item_info.declared_value = item.declared_value
-            item_info.declared_value_date = item.declared_value_date
-        result_list.append(item_info)
-
-    result_list.sort(key=lambda item: (item.address, item.article_no))
-
-    # 같은 항목 개수 세기
-    parent_item_info = ItemInfo()
-    for item_info in result_list:
-        if item_info.parent_id == 0:
-            item_info.count = 1
-            parent_item_info = item_info
-        elif item_info.parent_id == parent_item_info.id:
-            parent_item_info.count = parent_item_info.count + 1
-
-    context = { 'list': result_list }
-    return render(request, 'realestate/item_list.html', context)
-
-def index2(request):
-    result_list = []
-    realestate_list = Realestate.objects.order_by('address_jibun')
+    realestate_list = Realestate.objects.filter(is_favorite=True).order_by('address_jibun')
 
     for item in realestate_list:
         my_list = MyLandItem.objects.filter(realestate_id=item.id).order_by('article_no')
-        iteminfo = ItemInfo()
+        iteminfo = ItemInfo2()
         iteminfo.realestate = item
 
         # 가격정보 null 일 경우 json 파싱해서 값 가져오기
@@ -90,23 +41,21 @@ def index2(request):
     context = { 'list': result_list }
     return render(request, 'realestate/item_list2.html', context)
 
+def alllist(request):
+    result_list = []
+    realestate_list = Realestate.objects.order_by('address_jibun')
+
+    for item in realestate_list:
+        my_list = MyLandItem.objects.filter(realestate_id=item.id).order_by('article_no')
+        iteminfo = ItemInfo2()
+        iteminfo.realestate = item
+        iteminfo.mylist = my_list
+        result_list.append(iteminfo)
+
+    context = { 'list': result_list }
+    return render(request, 'realestate/all_list.html', context)
+
 def detail(request, listitem_id):
-    item = MyLandItem.objects.get(id=listitem_id)
-    json_path = f'{json_save_path}/{nl.LandItem.getJsonFileNameS(item.article_no, item.article_confirm_ymd)}'
-    with open(json_path, 'r', encoding='utf-8') as json_file:
-        json_object = json.load(json_file)
-
-    # 이미지 목록 가져오기
-    image_list = []
-    image_dir = land_image_path + '/' + item.article_no
-    if os.path.isdir(image_dir):
-        image_list = os.listdir(image_dir)
-
-    pretty_json = json.dumps(json_object, indent=4, ensure_ascii=False)
-    context = { 'item': item, 'json': pretty_json, 'image_list': image_list }
-    return render(request, 'realestate/item_detail.html', context)
-
-def detail2(request, listitem_id):
     item = Realestate.objects.get(id=listitem_id)
 
     # 이미지 목록 가져오기
@@ -124,7 +73,7 @@ def detail2(request, listitem_id):
             file_list = os.listdir(file_dir)
 
     context = { 'item': item, 'image_list': image_list, 'file_list': file_list }
-    return render(request, 'realestate/item_detail2.html', context)
+    return render(request, 'realestate/item_detail.html', context)
 
 
 def json_view(request, article_no):
@@ -142,13 +91,6 @@ def json_view(request, article_no):
     return render(request, 'realestate/json_view.html', context)
 
 def item_modify(request, listitem_id):
-    item = MyLandItem.objects.get(id=listitem_id)
-    item.parent_id = request.POST.get('parent_id')
-    item.memo = request.POST.get('memo')
-    item.save()
-    return redirect('realestate:index')
-
-def item_modify2(request, listitem_id):
     item = Realestate.objects.get(id=listitem_id)
     item.memo = request.POST.get('memo')
     item.save()
@@ -185,7 +127,10 @@ def naver(request):
         land_item = nl.LandItem()
         land_item.parseFromID(article_no)
         land_item.calcBuildYears()
-        result_list.append(land_item)
+
+        naver_item = NaverItem()
+        naver_item.naver = land_item
+        result_list.append(naver_item)
     elif cur_location is not None:
         list_crawler = nl.LandListCrawler()
         list_crawler.setBuildingType(building_types)
@@ -208,10 +153,6 @@ def naver(request):
                     my_item.is_new = True
                     my_item.save()
 
-            # 단독only 조건일 경우 다가구 제외        
-            if is_building_type_ddonly and my_item.is_multi_family is not None and my_item.is_multi_family:
-                continue
-
             land_item = nl.LandItem()
             json_file_path = f'{json_save_path}/{nl.LandItem.getJsonFileNameS(my_item.article_no,my_item.article_confirm_ymd)}'
             # 이미 저장된 아이템일 경우 json 파일 읽기
@@ -221,20 +162,26 @@ def naver(request):
                 land_item.parseFromID(my_item.article_no)
                 land_item.saveJson(json_save_path)
 
-            if my_item.initial_price is None:
-                land_item.getPriceHistory()
-                my_item.initial_price = land_item.initial_price
-                my_item.save()
+            naver_item = NaverItem()
+
+            if 0 < my_item.realestate_id:
+                naver_item.realestate = Realestate.objects.get(id=my_item.realestate_id)
+                # 단독only 조건일 경우 다가구 제외        
+                if is_building_type_ddonly and not naver_item.realestate.is_dandok:
+                    continue
             else:
-                land_item.initial_price = my_item.initial_price
+                realestate_list = Realestate.objects.filter(address_jibun=land_item.address)
+                if 0 < len(realestate_list):
+                    naver_item.realestate_match = realestate_list.first()
+                    # 단독only 조건일 경우 다가구 제외        
+                    #if is_building_type_ddonly and not naver_item.realestate_match.is_dandok:
+                    #    continue
+                
+            naver_item.naver = land_item
+            naver_item.myitem = my_item
+            result_list.append(naver_item)
 
-            land_item.is_new = my_item.is_new
-            land_item.is_favorite = my_item.is_favorite
-            land_item.is_multi_family = my_item.is_multi_family
-            land_item.calcBuildYears()
-            result_list.append(land_item)
-
-    result_list.sort(key=lambda item: item.address)
+    result_list.sort(key=lambda item: item.naver.address)
 
     location_code = LocationCode.objects.order_by('location')
 
@@ -253,63 +200,101 @@ def naver(request):
     }
     return render(request, 'realestate/naver.html', context)
 
+def naver_register(request):
+    item_id = request.GET.get('item_id')
+    my_item = MyLandItem.objects.get(id=item_id)
+    article_no = my_item.article_no
+    article_confirm_ymd = my_item.article_confirm_ymd
+
+    json_file_path = f'{json_save_path}/{nl.LandItem.getJsonFileNameS(article_no,article_confirm_ymd)}'
+    land_item = nl.LandItem()
+    land_item.loadJson(json_file_path)
+
+    realestate = Realestate()
+    realestate.address_jibun = land_item.address
+    addr_info = nm.addr_search(land_item.address)
+    realestate.address_road = addr_info.address_road
+    realestate.area = land_item.area
+    realestate.building_area = land_item.building_area
+    realestate.total_floor_area = land_item.total_floor_area
+    appdate = land_item.getUseApproveDate()
+    realestate.use_approval_date = datetime.date(appdate.year, appdate.month, appdate.day)
+    realestate.structure = land_item.structure
+    realestate.heating = land_item.heating
+    #realestate.sewage
+    #realestate.declared_value
+    #realestate.declared_value_date
+    #realestate.is_favorite
+    #realestate.is_dandok
+    #realestate.memo
+    #realestate.file_prefix
+
+    context = {
+        'realestate': realestate,
+        'item_id': item_id
+    }
+    return render(request, 'realestate/naver_register.html', context)
+
+def naver_register_action(request):
+    realestate = Realestate(address_jibun='')
+
+    realestate.address_jibun = request.POST.get('address_jibun', '')
+    realestate.address_road = request.POST.get('address_road', '')
+    realestate.area = Decimal(request.POST.get('area', '0.0'))
+    realestate.building_area = Decimal(request.POST.get('building_area', '0.0'))
+    realestate.total_floor_area = Decimal(request.POST.get('total_floor_area', '0.0'))
+    use_approval_date = request.POST.get('use_approval_date', '')
+    realestate.use_approval_date = yyyymmdd_to_date(use_approval_date)
+    realestate.structure = request.POST.get('structure', '')
+    realestate.heating = request.POST.get('heating', '')
+    realestate.sewage = request.POST.get('sewage', '')
+    realestate.declared_value = request.POST.get('declared_value', '')
+    declared_value_date = request.POST.get('declared_value_date', '')
+    realestate.declared_value_date = yyyymmdd_to_date(declared_value_date)
+    realestate.is_favorite = 'is_favorite' in request.POST
+    realestate.is_dandok = 'is_dandok' in request.POST
+    realestate.memo = request.POST.get('memo', '')
+    realestate.file_prefix = request.POST.get('file_prefix', '')
+
+    realestate.save()
+
+    item_id = request.POST.get('item_id')
+    my_item = MyLandItem.objects.get(id=item_id)
+    my_item.realestate_id = realestate.id
+    my_item.is_new = False
+    my_item.save()
+
+    return HttpResponse('완료')
+
+def naver_link(request):
+    result = 'Fail'
+    try:
+        item_id = request.POST.get('item_id')
+        realestate_id = request.POST.get('match_id')
+        my_item = MyLandItem.objects.get(id=item_id)
+        my_item.is_new = False
+        my_item.realestate_id = realestate_id
+        my_item.save()
+        result = 'Success'
+    except:
+        pass
+
+    context = { 'result': result }
+    return HttpResponse(json.dumps(context), content_type="application/json")
+
 def check(request):
     result = 'Fail'
     try:
-        article_no = request.POST.get('article_no')
-        my_item = MyLandItem.objects.get(article_no=article_no)
+        item_id = request.POST.get('item_id')
+        my_item = MyLandItem.objects.get(id=item_id)
         my_item.is_new = False
         my_item.save()
         result = 'Success'
     except:
         pass
 
-    context = {
-        'article_no': article_no,
-        'result': result,
-    }
+    context = { 'result': result }
     return HttpResponse(json.dumps(context), content_type="application/json")
-
-def favorite(request):
-    result = 'Fail'
-    try:
-        article_no = request.POST.get('article_no')
-        my_item = MyLandItem.objects.get(article_no=article_no)
-        my_item.is_new = False
-        my_item.is_favorite = True
-        my_item.save()
-        result = 'Success'
-    except:
-        pass
-
-    context = {
-        'article_no': article_no,
-        'result': result,
-    }
-    return HttpResponse(json.dumps(context), content_type="application/json")
-
-def multi(request):
-    result = 'Fail'
-    try:
-        article_no = request.POST.get('article_no')
-        is_multi_family = request.POST.get('is_multi_family')
-        my_item = MyLandItem.objects.get(article_no=article_no)
-        if is_multi_family == 'True':
-            my_item.is_multi_family = True
-        else:
-            my_item.is_multi_family = False
-        my_item.is_new = False
-        my_item.save()
-        result = 'Success'
-    except:
-        pass
-
-    context = {
-        'article_no': article_no,
-        'result': result,
-    }
-    return HttpResponse(json.dumps(context), content_type="application/json")
-
 
 def price(request):
     price_list = []

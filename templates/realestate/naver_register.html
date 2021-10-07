@@ -1,0 +1,115 @@
+{% load static %}
+{% load humanize %}
+{% load realestate_filter %}
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <link rel="stylesheet" type="text/css" href="{% static 'css/style.css' %}">
+        <style>
+            td input, td textarea { box-sizing: border-box; }
+            th { text-align: center; }
+        </style>
+        <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+        <script src="{% static 'js/common.js' %}"></script>
+        <script type="text/javascript">
+        </script>
+    </head>
+    <body>
+        <form action="{% url 'realestate:naver_register_action' %}" method="post" id="form_register">
+            {% csrf_token %}
+            <input type="hidden" name="item_id" value="{{item_id}}">
+            <table>
+                <tr>
+                    <th style="width: 150px;">항목</th>
+                    <th>값</th>
+                </tr>
+                <tr>
+                    <td>지번 주소</td>
+                    <td><input type="text" name="address_jibun" style="width: 100%;" value="{{realestate.address_jibun}}"></td>
+                </tr>
+                <tr>
+                    <td>도로명 주소</td>
+                    <td><input type="text" name="address_road" style="width: 100%;" value="{{realestate.address_road}}"></td>
+                </tr>
+                <tr>
+                    <td>대지</td>
+                    <td><input type="text" name="area" style="width: 100px;" value="{{realestate.area}}"></td>
+                </tr>
+                <tr>
+                    <td>건축면적</td>
+                    <td><input type="text" name="building_area" style="width: 100px;" value="{{realestate.building_area}}"></td>
+                </tr>
+                <tr>
+                    <td>연면적</td>
+                    <td><input type="text" name="total_floor_area" style="width: 100px;" value="{{realestate.total_floor_area}}"></td>
+                </tr>
+                <tr>
+                    <td>사용승인일</td>
+                    <td>
+                        {% if realestate.use_approval_date %}
+                        <input type="date" name="use_approval_date" value="{{realestate.use_approval_date|date_yyyymmdd}}">
+                        {% else %}
+                        <input type="date" name="use_approval_date">
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <td>주구조</td>
+                    <td><input type="text" name="structure" style="width: 200px;" value="{{realestate.structure}}"></td>
+                </tr>
+                <tr>
+                    <td>난방연료</td>
+                    <td><input type="text" name="heating" style="width: 200px;" value="{{realestate.heating}}"></td>
+                </tr>
+                <tr>
+                    <td>하수처리방식</td>
+                    <td><input type="text" name="sewage" style="width: 200px;" value="{{realestate.sewage}}"></td>
+                </tr>
+                <tr>
+                    <td>공시가격</td>
+                    <td><input type="text" name="declared_value" style="width: 100px;" value="{{realestate.declared_value}}"></td>
+                </tr>
+                <tr>
+                    <td>공시가격 기준일</td>
+                    <td>
+                        {% if realestate.declared_value_date %}
+                        <input type="date" name="declared_value_date" value="{{realestate.declared_value_date|date_yyyymmdd}}">
+                        {% else %}
+                        <input type="date" name="declared_value_date">
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <td>관심 여부</td>
+                    <td>
+                        {% if realestate.is_favorite %}
+                        <input type="checkbox" name="is_favorite" checked>
+                        {% else %}
+                        <input type="checkbox" name="is_favorite">
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <td>단독 여부</td>
+                    <td>
+                        {% if realestate.is_dandok %}
+                        <input type="checkbox" name="is_dandok" checked>
+                        {% else %}
+                        <input type="checkbox" name="is_dandok">
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <td>파일 접두어</td>
+                    <td><input type="text" name="file_prefix" style="width: 300px;" value="{{realestate.file_prefix}}"></td>
+                </tr>
+                <tr>
+                    <td>메모</td>
+                    <td><textarea name="memo" rows="10" style="width: 100%; max-width: 100%;">{{realestate.memo}}</textarea></td>
+                </tr>
+            </table>
+            <input type="submit" value="등록">
+        </form>
+    </body>
+</html>

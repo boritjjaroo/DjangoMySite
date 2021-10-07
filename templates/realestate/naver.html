@@ -44,15 +44,15 @@
                 });
 
                 $('.btn_check').click(function() {
-                    var article_no = $(this).attr('name');
+                    var item_id = $(this).attr('item_id');
                     $.ajax({
                         type: "POST",
                         url: "{% url 'realestate:check' %}",
-                        data: { 'article_no': article_no },
+                        data: { 'item_id': item_id },
                         dataType: "json",
                         success: function(response) {
                             if (response.result == "Success") {
-                                $('#btn_check_'+article_no).css("display", "None");
+                                $('#btn_check_' + item_id).css("display", "None");
                             }
                             else {
                                 alert(response.result);
@@ -64,41 +64,28 @@
                     });
                 });
 
-                $('.btn_favorite').click(function() {
-                    var article_no = $(this).attr('name');
-                    $.ajax({
-                        type: "POST",
-                        url: "{% url 'realestate:favorite' %}",
-                        data: { 'article_no': article_no },
-                        dataType: "json",
-                        success: function(response) {
-                            if (response.result == "Success") {
-                                $('#btn_check_'+article_no).css("display", "None");
-                                $('#btn_favorite_'+article_no).css("display", "None");
-                                $('#tr_'+article_no).css("background-color", "burlywood");
-                            }
-                            else {
-                                alert(response.result);
-                            }
-                        },
-                        error: function(request, status, error) {
-                            alert(error);
-                        },
-                    });
+                $('.btn_register').click(function() {
+                    var item_id = $(this).attr('item_id');
+                    var url = "{% url 'realestate:naver_register' %}?item_id=" + item_id;
+                    var popup = window.open(url, '등록', 'scrollbars=yes');
+                    popup.onbeforeunload = function() {
+                        $('#btn_check_' + item_id).css("display", "None");
+                        $('#btn_register_' + item_id).css("display", "None");
+                    }
                 });
 
-                $('.btn_multi').click(function() {
-                    var article_no = $(this).attr('name');
-                    var is_multi_family = $(this).attr('data-value');
+                $('.btn_link').click(function() {
+                    var item_id = $(this).attr('item_id');
+                    var match_id = $(this).attr('match_id');
                     $.ajax({
                         type: "POST",
-                        url: "{% url 'realestate:multi' %}",
-                        data: { 'article_no': article_no, 'is_multi_family': is_multi_family },
+                        url: "{% url 'realestate:naver_link' %}",
+                        data: { 'item_id': item_id, 'match_id': match_id },
                         dataType: "json",
                         success: function(response) {
                             if (response.result == "Success") {
-                                $('#btn_check_'+article_no).css("display", "None");
-                                $('#div_multi_'+article_no).css("display", "None");
+                                $('#btn_check_' + item_id).css("display", "None");
+                                $('#btn_link_' + item_id).css("display", "None");
                             }
                             else {
                                 alert(response.result);
@@ -201,61 +188,72 @@
             <table>
                 <tr>
                     <th style="width: 50px; text-align: center;">액션</th>
-                    <th style="width: 90px; text-align: center;">글번호</th>
+                    <th style="width: 90px; text-align: center;">번호</th>
                     <th style="width: 80px; text-align: center;">제목</th>
                     <th style="width: 90px; text-align: center;">가격</th>
                     <th style="width: 120px; text-align: center;">정보</th>
                     <th style="width: 270px; text-align: center;">주소</th>
                     <th style="text-align: center;">설명</th>
                 </tr>
-                {% if list %}
                 {% for item in list %}
-                {% if item.is_favorite %}
-                <tr id="tr_{{item.id}}" style="background-color: burlywood;">
+                {% if item.realestate and item.realestate.is_favorite %}
+                <tr id="tr_{{item.naver.id}}" style="background-color: burlywood;">
                 {% else %}
-                <tr id="tr_{{item.id}}">
+                <tr id="tr_{{item.naver.id}}">
                 {% endif %}
                     <td>
-                        {% if item.is_new %}
+                        {% if item.myitem.is_new %}
                         <div>
-                            <input type="button" id="btn_check_{{item.id}}" class="btn_check" name="{{item.id}}" value="확인">
+                            <input type="button" id="btn_check_{{item.myitem.id}}" class="btn_check" item_id="{{item.myitem.id}}" value="확인">
                         </div>
                         {% endif %}
-                        {% if item.is_favorite == False %}
+                        {% if item.realestate %}
+                        {% elif item.realestate_match %}
                         <div>
-                            <input type="button" id="btn_favorite_{{item.id}}" class="btn_favorite" name="{{item.id}}" value="관심">
+                            <input type="button" id="btn_link_{{item.myitem.id}}" class="btn_link" item_id="{{item.myitem.id}}" match_id="{{item.realestate_match.id}}" value="연결">
                         </div>
-                        {% endif %}
-                        {% if item.is_multi_family is None %}
-                        <div id="div_multi_{{item.id}}">
-                            <input type="button" class="btn_multi" name="{{item.id}}" data-value="False" value="단독">
-                            <input type="button" class="btn_multi" name="{{item.id}}" data-value="True" value="다가구">
+                        {% else %}
+                        <div>
+                            <input type="button" id="btn_register_{{item.myitem.id}}" class="btn_register" item_id="{{item.myitem.id}}" value="등록">
                         </div>
                         {% endif %}
                     </td>
-                    <td style="text-align: center;"><a href="https://new.land.naver.com/houses?articleNo={{item.id}}" target="_blank">{{item.id}}</a></td>
-                    <td style="text-align: center;">{{item.name}}<br>({{item.subname}})</td>
+                    <td style="text-align: center;">
+                        <div>
+                            <span><a href="https://new.land.naver.com/houses?articleNo={{item.naver.id}}" target="_blank">{{item.naver.id}}</a></span>
+                        </div>
+                        <div>
+                            ID ({{item.myitem.id}})
+                        </div>
+                        <div>
+                            연결 ({{item.myitem.realestate_id}})
+                        </div>
+                        {% if item.realestate_match %}
+                        <div>
+                            Match ({{item.realestate_match.id}})
+                        </div>
+                        {% endif %}
+                    </td>
+                    <td style="text-align: center;">{{item.naver.name}}<br>({{item.naver.subname}})</td>
                     <td style="text-align: right;">
-                        <div>{{item.price|intcomma}}만원</div>
-                        <div style="font-size: smaller;">({{item.initial_price}})</div>
+                        <div>{{item.naver.price|intcomma}}만원</div>
                     </td>
                     <td>
-                        {{item.all_ho_count}}세대<br>
-                        대지:{{item.area}}㎡<br>
-                        건축면적:{{item.building_area}}㎡<br>
-                        연면적:{{item.total_floor_area}}㎡<br>
-                        연식:{{item.build_years}}년
+                        {{item.naver.all_ho_count}}세대<br>
+                        대지:{{item.naver.area}}㎡<br>
+                        건축면적:{{item.naver.building_area}}㎡<br>
+                        연면적:{{item.naver.total_floor_area}}㎡<br>
+                        사용승인일:{{item.naver.use_approve_day2}}
                     </td>
                     <td>
-                        <a href="https://map.naver.com/v5/search/{{item.address}}" target="_blank">{{item.address}}</a>
-                        {% if item.is_location_address %}
+                        <a href="https://map.naver.com/v5/search/{{item.naver.address}}" target="_blank">{{item.naver.address}}</a>
+                        {% if item.naver.is_location_address %}
                         <br>(좌표 추정 주소)
                         {% endif %}
                     </td>
-                    <td><p>{{item.description|linebreaks}}</p><p>{{item.detailDescription|linebreaks}}</p></td>
+                    <td><p>{{item.naver.description|linebreaks}}</p><p>{{item.naver.detailDescription|linebreaks}}</p></td>
                 </tr>
                 {% endfor %}
-                {% endif %}
             </table>
         </div>
     </body>

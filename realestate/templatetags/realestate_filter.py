@@ -42,3 +42,14 @@ def intcommak(value):
         result = value_str[-4:] + result
         value_str = value_str[:-4]
     return result
+
+@register.filter()
+def boolean_ox(value):
+    if value:
+        return 'O'
+    return 'X'
+
+@register.filter()
+def date_yyyymmdd(value):
+    val = f'{value.year:04d}-{value.month:02d}-{value.day:02d}'
+    return val
