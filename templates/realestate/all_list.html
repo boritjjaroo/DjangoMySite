@@ -16,7 +16,10 @@
                 <th width="50">id</th>
                 <th width="30">관심</th>
                 <th width="30">단독여부</th>
-                <th width="350">주소</th>
+                <th width="300">주소</th>
+                <th style="width: 60px;">대지</th>
+                <th style="width: 60px;">연면적</th>
+                <th style="width: 120px;">건축연도</th>
                 <th>비고</th>
             </tr>
             {% for item in list %}
@@ -33,26 +36,9 @@
                 <td>
                     <a href="https://map.naver.com/v5/search/{{item.realestate.address_jibun}}" target="_blank">{{item.realestate.address_jibun}}</a>
                 </td>
-                <!--
-                <td>
-                    <div>
-                        <span class="info_col_name">대지면적</span>
-                        <span>{{item.realestate.area}}㎡ ({{item.realestate.area|pyungd|floatformat}}평)</span>
-                    </div>
-                    <div>
-                        <span class="info_col_name">건축면적</span>
-                        <span>{{item.realestate.building_area}}㎡ ({{item.realestate.building_area|pyungd|floatformat}}평)</span>
-                    </div>
-                    <div>
-                        <span class="info_col_name">연 면 적</span>
-                        <span>{{item.realestate.total_floor_area}}㎡ ({{item.realestate.total_floor_area|pyungd|floatformat}}평)</span>
-                    </div>
-                    <div>
-                        <span class="info_col_name">사용승인일</span>
-                        <span>{{item.realestate.use_approval_date}}</span>
-                    </div>
-                </td>
-                -->
+                <td style="text-align: center;">{{item.realestate.area}}</td>
+                <td style="text-align: center;">{{item.realestate.total_floor_area}}</td>
+                <td style="text-align: center;">{{item.realestate.use_approval_date}}</td>
                 <!--
                 <td style="text-align: center;">
                 {% for myitem in item.mylist %}

@@ -328,6 +328,7 @@ def price(request):
         amount_sum = 0
 
         for item in search_results:
+            # 검색 조건 필터링
             if len(filter_location) > 0 and item.location != filter_location:
                 continue
             if len(filter_address) > 0 and item.address != filter_address:
@@ -339,20 +340,31 @@ def price(request):
             if len(filter_road) > 0 and item.road_length != filter_road:
                 continue
 
-            price_list.append(item)
+            price_info = PriceInfo()
+            price_info.price = item
+
+            # 실제 대상물 검색
+            deal_date = datetime.date(int(search_year), item.deal_month, item.deal_day)
+            realestates = Realestate.objects.filter(deal_price=item.amount, deal_date=deal_date)
+            if 0 < len(realestates):
+                price_info.realestate = realestates[0]
+            price_list.append(price_info)
+
+            # 최소, 최대, 평균금액 계산
             amount_sum = amount_sum + item.amount_per_area
             if amount_max < item.amount_per_area:
                 amount_max = item.amount_per_area
             if item.amount_per_area < amount_min:
                 amount_min = item.amount_per_area
 
+    # 최소, 최대, 평균금액 계산
     if len(price_list) > 0:
         amount_average = round(amount_sum / len(price_list))
     else:
         amount_min = 0
 
     #print(price_list)
-    price_list.sort(key=lambda item: (item.deal_month, item.deal_day), reverse=True)
+    price_list.sort(key=lambda item: (item.price.deal_month, item.price.deal_day), reverse=True)
 
     location_code = LocationCode.objects.order_by('location')
 

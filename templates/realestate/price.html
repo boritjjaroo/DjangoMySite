@@ -7,6 +7,7 @@
         <meta charset="utf-8">
         <link rel="stylesheet" type="text/css" href="{% static 'css/style.css' %}">
         <style>
+            th { text-align: center; }
         </style>
         <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
         <script src="{% static 'js/common.js' %}"></script>
@@ -100,38 +101,58 @@
         <div>
             <table>
                 <tr>
-                    <th style="width: 150px; text-align: center;">주소</th>
-                    <th style="width: 150px; text-align: center;">지목/용도</th>
-                    <th style="width: 80px; text-align: center;">계약일</th>
-                    <th style="width: 80px; text-align: center;">도로조건</th>
-                    <th style="width: 120px; text-align: center;">면적</th>
-                    <th style="width: 60px; text-align: center;">건축연도</th>
-                    <th style="width: 120px; text-align: center;">건축구조</th>
-                    <th style="width: 80px; text-align: center;">금액</th>
-                    <th style="text-align: center;">취소날짜</th>
+                    <th style="width: 50px;">액션</th>
+                    <th style="width: 100px;">주소</th>
+                    <th style="width: 150px;">지목/용도</th>
+                    <th style="width: 50px;">계약일</th>
+                    <th style="width: 80px;">도로조건</th>
+                    <th style="width: 120px;">면적</th>
+                    <th style="width: 60px;">건축연도</th>
+                    <th style="width: 120px;">건축구조</th>
+                    <th style="width: 80px;">금액</th>
+                    <th style="width: 100px;">취소날짜</th>
+                    <th style="width: 50px;">실물</th>
+                    <th>기타</th>
                 </tr>
                 {% if list %}
                 {% for item in list %}
-                {% if item.cancel_ymd %}
+                {% if item.realestate %}
+                <tr style="background-color:darksalmon;">
+                {% elif item.price.cancel_ymd %}
                 <tr style="background-color: lightgrey;">
                 {% else %}
                 <tr>
                 {% endif %}
-                    <td>{{item.location}} {{item.address}}</td>
-                    <td style="text-align: center;">{{item.jimok}}<br>{{item.region_usage}}</td>
-                    <td style="text-align: center;">{{item.deal_month}}-{{item.deal_day}}</td>
-                    <td style="text-align: center;">{{item.road_length}}</td>
+                    <td style="text-align: center;">
+                        {% if item.realestate %}
+                        {% elif item.price.cancel_ymd %}
+                        {% else %}
+                        <div>
+                            <input type="button" class="btn_search" lawd_cd="{{item.price.lawd_cd}}" value="찾기">
+                        </div>
+                        {% endif %}
+                    </td>
+                    <td>{{item.price.location}} {{item.price.address}}</td>
+                    <td style="text-align: center;">{{item.price.jimok}}<br>{{item.price.region_usage}}</td>
+                    <td style="text-align: center;">{{item.price.deal_month}}-{{item.price.deal_day}}</td>
+                    <td style="text-align: center;">{{item.price.road_length}}</td>
                     <td>
-                        대&nbsp;&nbsp;&nbsp;지: {{item.area|intcomma}}㎡<br>
-                        연면적: {{item.total_building_area}}㎡<br>
+                        대&nbsp;&nbsp;&nbsp;지: {{item.price.area|intcomma}}㎡<br>
+                        연면적: {{item.price.total_building_area}}㎡<br>
                     </td>
-                    <td style="text-align: center;">{{item.build_year}}년</td>
-                    <td style="text-align: center;">{{item.structure|default_if_none:""}}</td>
+                    <td style="text-align: center;">{{item.price.build_year}}년</td>
+                    <td style="text-align: center;">{{item.price.structure|default_if_none:""}}</td>
                     <td style="text-align: right;">
-                        {{item.amount|intcomma}}만원<br>
-                        <span style="font-size: smaller;">({{item.amount_per_area|intcomma}}만원/평)</span>
+                        {{item.price.amount|manwon|intcomma}}만원<br>
+                        <span style="font-size: smaller;">({{item.price.amount_per_area|manwon|intcomma}}만원/평)</span>
                     </td>
-                    <td>{{item.cancel_ymd|default_if_none:""}}</td>
+                    <td>{{item.price.cancel_ymd|default_if_none:""}}</td>
+                    {% if item.realestate %}
+                    <td style="text-align: center;">{{item.realestate.id}}</td>
+                    {% else %}
+                    <td></td>
+                    {% endif %}
+                    <td></td>
                 </tr>
                 {% endfor %}
                 {% endif %}

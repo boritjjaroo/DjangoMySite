@@ -11,3 +11,8 @@ class NaverItem:
         realestate_match = None
         myitem = None
         naver = None
+
+class PriceInfo:
+    def __init__(self):
+        price = None
+        realestate_id = 0
