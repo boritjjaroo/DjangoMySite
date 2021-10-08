@@ -31,7 +31,11 @@
                 <th>메모</th>
             </tr>
             {% for item in list %}
+            {% if item.realestate.deal_date %}
+            <tr style="background-color: darkgray;">
+            {% else %}
             <tr>
+            {% endif %}
                 <td style="text-align: center;">
                     <a href="/realestate/{{item.realestate.id}}/">{{item.realestate.id}}</a>
                 </td>
@@ -39,15 +43,21 @@
                     <img src="{% static 'pic/realestate/' %}{{item.realestate.file_prefix}}.png" style="max-width: 150px; max-height: 150px; width: auto; height: auto;">
                 </td>
                 <td style="text-align: center;">
-                {% for myitem in item.mylist %}
-                <div>
-                    <span style="width: 80px; display: inline-block;"><a href="https://new.land.naver.com/houses?articleNo={{myitem.article_no}}" target="_blank">{{myitem.article_no}}</a></span>
-                    <span style="font-size: smaller; width: 50px; display: inline-block;"><a href="/realestate/json/{{myitem.article_no}}/" target="_blank">({{myitem.article_confirm_ymd}})</a></span>
-                    <span style="width: 80px; text-align: right; display: inline-block;">{{myitem.price|intcomma}}만원</span>
-                    <span style="font-size: smaller; width: 70px; display: inline-block;">({{myitem.price|pricepyungd:item.realestate.area|intcomma}}만원/평)</span>
-                    <span style="font-size: smaller; width: 20px; display: inline-block;">({{myitem.price|priceratio:item.realestate.declared_value}}%)</span>
-                </div>
-                {% endfor %}
+                    {% for myitem in item.mylist %}
+                    <div>
+                        <span style="width: 80px; display: inline-block;"><a href="https://new.land.naver.com/houses?articleNo={{myitem.article_no}}" target="_blank">{{myitem.article_no}}</a></span>
+                        <span style="font-size: smaller; width: 50px; display: inline-block;"><a href="/realestate/json/{{myitem.article_no}}/" target="_blank">({{myitem.article_confirm_ymd}})</a></span>
+                        <span style="width: 80px; text-align: right; display: inline-block;">{{myitem.price|intcomma}}만원</span>
+                        <span style="font-size: smaller; width: 70px; display: inline-block;">({{myitem.price|pricepyungd:item.realestate.area|intcomma}}만원/평)</span>
+                        <span style="font-size: smaller; width: 20px; display: inline-block;">({{myitem.price|priceratio2:item.realestate.declared_value}}%)</span>
+                    </div>
+                    {% endfor %}
+                    {% if item.realestate.deal_date %}
+                    <div style="margin-top: 5px; font-weight: bold;">
+                        실거래가 : {{item.realestate.deal_price|manwon|intcomma}}만원 ({{item.realestate.deal_date}})
+                        <span style="font-size: smaller;">({{item.realestate.deal_price|priceratio:item.realestate.declared_value}}%)</span>
+                    </div>
+                    {% endif %}
                 </td>
                 <td>
                     <div>

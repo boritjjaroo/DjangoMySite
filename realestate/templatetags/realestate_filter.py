@@ -26,6 +26,12 @@ def pricepyungd(value, arg):
 def priceratio(value, arg):
     if value == 0:
         return 0
+    return round(arg / value * 100)
+
+@register.filter()
+def priceratio2(value, arg):
+    if value == 0:
+        return 0
     return round((arg / 10000) / value * 100)
 
 @register.filter()

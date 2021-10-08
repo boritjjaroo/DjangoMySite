@@ -46,14 +46,6 @@ def alllist(request):
     realestate_list = Realestate.objects.order_by('address_jibun')
 
     for item in realestate_list:
-        # 법정동 코드 없을 경우 값 채우기
-        if not item.lawd_cd:
-            print(item.address_jibun, end='')
-            addr_info = nm.addr_search(item.address_jibun)
-            print(' --> ' + addr_info.lawd_cd)
-            item.lawd_cd = addr_info.lawd_cd
-            item.save()
-
         my_list = MyLandItem.objects.filter(realestate_id=item.id).order_by('article_no')
         iteminfo = ItemInfo2()
         iteminfo.realestate = item
@@ -81,7 +73,7 @@ def detail(request, listitem_id):
             file_list = os.listdir(file_dir)
 
     context = { 'item': item, 'image_list': image_list, 'file_list': file_list }
-    return render(request, 'realestate/item_detail.html', context)
+    return render(request, 'realestate/item_detail2.html', context)
 
 
 def json_view(request, article_no):
