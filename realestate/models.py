@@ -4,6 +4,8 @@ from django.db import models
 class Realestate(models.Model):
     address_jibun = models.CharField(max_length=64)
     address_road = models.CharField(max_length=64, default='')
+    # 법정동코드
+    lawd_cd = models.CharField(max_length=10, default='')
     area = models.DecimalField(max_digits=7, decimal_places=2, default=0)
     building_area = models.DecimalField(max_digits=7, decimal_places=2, default=0)
     total_floor_area = models.DecimalField(max_digits=7, decimal_places=2, default=0)
@@ -18,6 +20,9 @@ class Realestate(models.Model):
     # 공시가격
     declared_value = models.IntegerField(default=0)
     declared_value_date = models.DateField(null=True)
+    # 실거래가(원)
+    deal_price = models.IntegerField(default=0)
+    deal_date = models.DateField(null=True)
 
     is_favorite = models.BooleanField(default=False)
     is_dandok = models.BooleanField(default=False)

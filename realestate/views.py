@@ -46,6 +46,14 @@ def alllist(request):
     realestate_list = Realestate.objects.order_by('address_jibun')
 
     for item in realestate_list:
+        # 법정동 코드 없을 경우 값 채우기
+        if not item.lawd_cd:
+            print(item.address_jibun, end='')
+            addr_info = nm.addr_search(item.address_jibun)
+            print(' --> ' + addr_info.lawd_cd)
+            item.lawd_cd = addr_info.lawd_cd
+            item.save()
+
         my_list = MyLandItem.objects.filter(realestate_id=item.id).order_by('article_no')
         iteminfo = ItemInfo2()
         iteminfo.realestate = item
@@ -214,6 +222,7 @@ def naver_register(request):
     realestate.address_jibun = land_item.address
     addr_info = nm.addr_search(land_item.address)
     realestate.address_road = addr_info.address_road
+    realestate.lawd_cd = addr_info.lawd_cd
     realestate.area = land_item.area
     realestate.building_area = land_item.building_area
     realestate.total_floor_area = land_item.total_floor_area
@@ -224,6 +233,8 @@ def naver_register(request):
     #realestate.sewage
     #realestate.declared_value
     #realestate.declared_value_date
+    #realestate.deal_price
+    #realestate.deal_date
     #realestate.is_favorite
     #realestate.is_dandok
     #realestate.memo
@@ -240,6 +251,7 @@ def naver_register_action(request):
 
     realestate.address_jibun = request.POST.get('address_jibun', '')
     realestate.address_road = request.POST.get('address_road', '')
+    realestate.lawd_cd = request.POST.get('lawd_cd', '')
     realestate.area = Decimal(request.POST.get('area', '0.0'))
     realestate.building_area = Decimal(request.POST.get('building_area', '0.0'))
     realestate.total_floor_area = Decimal(request.POST.get('total_floor_area', '0.0'))
@@ -251,6 +263,8 @@ def naver_register_action(request):
     realestate.declared_value = request.POST.get('declared_value', '')
     declared_value_date = request.POST.get('declared_value_date', '')
     realestate.declared_value_date = yyyymmdd_to_date(declared_value_date)
+    realestate.deal_price = 0
+    realestate.deal_date = None
     realestate.is_favorite = 'is_favorite' in request.POST
     realestate.is_dandok = 'is_dandok' in request.POST
     realestate.memo = request.POST.get('memo', '')
