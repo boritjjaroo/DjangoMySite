@@ -8,9 +8,97 @@
         <link rel="stylesheet" type="text/css" href="{% static 'css/style.css' %}">
         <style>
             th { text-align: center; }
+            td.declared { text-align: center; }
         </style>
+        <link rel="stylesheet" href="//code.jquery.com/ui/1.13.0/themes/base/jquery-ui.css">
+        <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+        <script src="https://code.jquery.com/ui/1.13.0/jquery-ui.js"></script>
+        <script src="{% static 'js/common.js' %}"></script>
+        <script type="text/javascript">
+            $(function(){
+                $('.btn_declared_update').click(function() {
+                    var item_id = $(this).attr('item_id');
+                    $.ajax({
+                        type: "POST",
+                        url: "{% url 'realestate:declared_get' %}",
+                        data: { 'item_id': item_id },
+                        dataType: "json",
+                        success: function(response) {
+                            if (response.result == "Success") {
+                                var date = response.list[0].date
+                                var price = response.list[0].price
+                                $("#declared_address").text(response.address);
+                                $("#declared_date").text(response.list[0].date);
+                                $("#declared_area_t").text(response.list[0].area_t);
+                                $("#declared_area_e").text(response.list[0].area_e);
+                                $("#declared_totalarea_t").text(response.list[0].total_area_t);
+                                $("#declared_totalarea_e").text(response.list[0].total_area_e);
+                                $("#declared_value").text(response.list[0].price);
+                                $("#dlg_declared").dialog({
+                                    modal: true,
+                                    width: 500,
+                                    buttons: {
+                                        "등록": function() {
+                                            $.ajax({
+                                                type: "POST",
+                                                url: "{% url 'realestate:declared_update' %}",
+                                                data: { 'item_id': item_id, 'date': date, 'price': price },
+                                                dataType: "json",
+                                                success: function(response) {
+                                                    if (response.result == "Success") {
+                                                        $("#declared_date"+item_id).text(date);
+                                                        $("#declared_value"+item_id).text(price.toLocaleString());
+                                                    }
+                                                    else {
+                                                        alert(response.result);
+                                                    }
+                                                },
+                                                error: function(request, status, error) {
+                                                    alert(error);
+                                                },
+                                            });
+                                            $(this).dialog("close");
+                                        },
+                                        "취소": function() {
+                                            $(this).dialog("close");
+                                        }
+                                    }
+                                });
+                            }
+                            else {
+                                alert(response.result);
+                            }
+                        },
+                        error: function(request, status, error) {
+                            alert(error);
+                        },
+                    });
+                });
+            });
+        </script>
     </head>
     <body>
+        <div id="dlg_declared" title="공시가격" class="ui-helper-hidden">
+            <div id="declared_address"></div>
+            <table>
+                <tr>
+                    <th>날짜</th>
+                    <th>대지</th>
+                    <th>대지(산정)</th>
+                    <th>연면적</th>
+                    <th>연면적(산정)</th>
+                    <th>가격</th>
+                </tr>
+                <tr>
+                    <td id="declared_date" class="declared"></td>
+                    <td id="declared_area_t" class="declared"></td>
+                    <td id="declared_area_e" class="declared"></td>
+                    <td id="declared_totalarea_t" class="declared"></td>
+                    <td id="declared_totalarea_e" class="declared"></td>
+                    <td id="declared_value" class="declared"></td>
+                </tr>
+            </table>
+        </div>
         <table>
             <tr>
                 <th width="50">id</th>
@@ -19,7 +107,9 @@
                 <th width="300">주소</th>
                 <th style="width: 60px;">대지</th>
                 <th style="width: 60px;">연면적</th>
-                <th style="width: 120px;">건축연도</th>
+                <th style="width: 100px;">건축연도</th>
+                <th style="width: 80px;">공시가격</th>
+                <th style="width: 100px;">공시가격 날짜</th>
                 <th>비고</th>
             </tr>
             {% for item in list %}
@@ -38,19 +128,12 @@
                 </td>
                 <td style="text-align: center;">{{item.realestate.area}}</td>
                 <td style="text-align: center;">{{item.realestate.total_floor_area}}</td>
-                <td style="text-align: center;">{{item.realestate.use_approval_date}}</td>
-                <!--
-                <td style="text-align: center;">
-                {% for myitem in item.mylist %}
-                <div>
-                    <span style="width: 80px; display: inline-block;"><a href="https://new.land.naver.com/houses?articleNo={{myitem.article_no}}" target="_blank">{{myitem.article_no}}</a></span>
-                    <span style="font-size: smaller; width: 50px; display: inline-block;"><a href="/realestate/json/{{myitem.article_no}}/" target="_blank">({{myitem.article_confirm_ymd}})</a></span>
-                    <span style="width: 80px; text-align: right; display: inline-block;">{{myitem.price|intcomma}}만원</span>
-                </div>
-                {% endfor %}
+                <td style="text-align: center;">{{item.realestate.use_approval_date|date:"Y-m-d"}}</td>
+                <td id="declared_value{{item.realestate.id}}" style="text-align: center;">{{item.realestate.declared_value|intcomma}}</td>
+                <td id="declared_date{{item.realestate.id}}" style="text-align: center;">{{item.realestate.declared_value_date|date:"Y-m-d"}}</td>
+                <td>
+                    <input type="button" class="btn_declared_update" item_id="{{item.realestate.id}}" value="공시가격 업데이트">
                 </td>
-                -->
-                <td></td>
             </tr>
             {% endfor %}
         </table>

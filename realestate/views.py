@@ -1,4 +1,4 @@
-from django.http.response import HttpResponse
+from django.http.response import HttpResponse, JsonResponse
 from django.shortcuts import render, redirect
 
 import time
@@ -13,6 +13,7 @@ from .util import *
 import naver.land as nl
 import naver.map as nm
 import gov.molit as molit
+import gov.kras as kras
 
 
 json_save_path = './realestate/json'
@@ -46,14 +47,60 @@ def alllist(request):
     realestate_list = Realestate.objects.order_by('address_jibun')
 
     for item in realestate_list:
-        my_list = MyLandItem.objects.filter(realestate_id=item.id).order_by('article_no')
+        #my_list = MyLandItem.objects.filter(realestate_id=item.id).order_by('article_no')
         iteminfo = ItemInfo2()
         iteminfo.realestate = item
-        iteminfo.mylist = my_list
+        #iteminfo.mylist = my_list
         result_list.append(iteminfo)
 
     context = { 'list': result_list }
     return render(request, 'realestate/all_list.html', context)
+
+def declared_get(request):
+    result = 'Fail'
+    address = ''
+    price_infos = None
+    try:
+        item_id = request.POST.get('item_id')
+        realestate = Realestate.objects.get(id=item_id)
+        address = realestate.address_jibun
+        addr_info = nm.addr_search(realestate.address_jibun)
+        jibuns = addr_info.jibun.split('-')
+        bonbun = jibuns[0]
+        if 1 < len(jibuns):
+            bubun = jibuns[1]
+        else:
+            bubun = ''
+        #print(f'{realestate.lawd_cd}, {bonbun}, {bubun}')
+        price_infos = kras.get_house_price(realestate.lawd_cd, bonbun, bubun)
+        #print(len(price_infos))
+        if len(price_infos):
+            result = 'Success'
+    except Exception as e:
+        print('alllist_declared() exception!', e)
+        pass
+
+    context = { 'result': result, 'address': address, 'list': price_infos }
+    json_data = json.dumps(context, cls=MyJsonEncoder, ensure_ascii=False)
+    #print(json_data)
+    return HttpResponse(json_data, content_type="application/json")
+
+def declared_update(request):
+    result = 'Fail'
+    try:
+        item_id = request.POST.get('item_id')
+        date = request.POST.get('date')
+        price = request.POST.get('price')
+        realestate = Realestate.objects.get(id=item_id)
+        realestate.declared_value = price
+        realestate.declared_value_date = yyyymmdd_to_date(date)
+        realestate.save()
+        result = 'Success'
+    except:
+        pass
+
+    context = { 'result': result }
+    return HttpResponse(json.dumps(context), content_type="application/json")
 
 def detail(request, listitem_id):
     item = Realestate.objects.get(id=listitem_id)
@@ -210,21 +257,31 @@ def naver_register(request):
     land_item = nl.LandItem()
     land_item.loadJson(json_file_path)
 
+    addr_info = nm.addr_search(land_item.address)
+    jibuns = addr_info.jibun.split('-')
+    bonbun = jibuns[0]
+    if 1 < len(jibuns):
+        bubun = jibuns[1]
+    else:
+        bubun = ''
+    price_infos = kras.get_house_price(addr_info.lawd_cd, bonbun, bubun)
+
     realestate = Realestate()
     realestate.address_jibun = land_item.address
-    addr_info = nm.addr_search(land_item.address)
     realestate.address_road = addr_info.address_road
     realestate.lawd_cd = addr_info.lawd_cd
     realestate.area = land_item.area
     realestate.building_area = land_item.building_area
     realestate.total_floor_area = land_item.total_floor_area
     appdate = land_item.getUseApproveDate()
-    realestate.use_approval_date = datetime.date(appdate.year, appdate.month, appdate.day)
+    if appdate:
+        realestate.use_approval_date = datetime.date(appdate.year, appdate.month, appdate.day)
     realestate.structure = land_item.structure
     realestate.heating = land_item.heating
     #realestate.sewage
-    #realestate.declared_value
-    #realestate.declared_value_date
+    if 0 < len(price_infos):
+        realestate.declared_value = price_infos[0].price
+        realestate.declared_value_date = price_infos[0].date
     #realestate.deal_price
     #realestate.deal_date
     #realestate.is_favorite
