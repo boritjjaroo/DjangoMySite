@@ -15,7 +15,7 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
-from realestate import views
+from realestate.views import base_views
 
 urlpatterns = [
     path('admin/', admin.site.urls),

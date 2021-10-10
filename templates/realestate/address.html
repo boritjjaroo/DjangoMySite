@@ -1,0 +1,97 @@
+{% load static %}
+{% load humanize %}
+{% load realestate_filter %}
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <link rel="stylesheet" type="text/css" href="{% static 'css/style.css' %}">
+        <style>
+            th { text-align: center; }
+        </style>
+        <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+        <script src="{% static 'js/common.js' %}"></script>
+        <script type="text/javascript">
+            $(function(){
+                $('#btn_search').click(function() {
+                    $('#form_search').submit();
+                });
+            });
+        </script>
+    </head>
+    <body>
+        <div>
+            <form action="{% url 'realestate:address' %}" method="post" id="form_search">
+                {% csrf_token %}
+                <label>
+                    <span>지역</span>
+                    <select name="location">
+                        {% for item in location_code_list %}
+                        {% if cur_location == item.code %}
+                        <option value="{{item.code}}" selected="selected">{{item.location}}</option>
+                        {% else %}
+                        <option value="{{item.code}}">{{item.location}}</option>
+                        {% endif %}
+                        {% endfor %}
+                    </select>
+                </label>
+                <div style="margin-top: 10px;">
+                    <label>
+                        <span>지번(본번)</span>
+                        <input type="text" id="jibun_bonbun" name="jibun_bonbun" value="{{jibun_bonbun}}" style="width: 100px;">
+                    </label>
+                </div>
+                <div style="margin-top: 10px;">
+                    <input type="button" id="btn_search" value="검색">
+                </div>
+            </form>
+        </div>
+        <table>
+            <tr>
+                <th width="50">id</th>
+                <th width="100">법정동코드</th>
+                <th width="80">시도</th>
+                <th width="80">시군구</th>
+                <th width="80">읍면</th>
+                <th width="80">리</th>
+                <th width="20">산</th>
+                <th width="40">본번</th>
+                <th width="40">부번</th>
+                <th>비고</th>
+            </tr>
+            {% for item in list %}
+            <tr>
+                <td style="text-align: center;">
+                    {{item.id}}
+                </td>
+                <td style="text-align: center;">
+                    {{item.lawd_cd}}
+                </td>
+                <td style="text-align: center;">
+                    {{item.sido}}
+                </td>
+                <td style="text-align: center;">
+                    {{item.sigungu}}
+                </td>
+                <td style="text-align: center;">
+                    {{item.eupmyun}}
+                </td>
+                <td style="text-align: center;">
+                    {{item.ri}}
+                </td>
+                <td style="text-align: center;">
+                    {{item.is_san}}
+                </td>
+                <td style="text-align: center;">
+                    {{item.jibun_bonbun}}
+                </td>
+                <td style="text-align: center;">
+                    {{item.jibun_bubun}}
+                </td>
+                <td>
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+    </body>
+</html>

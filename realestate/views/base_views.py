@@ -7,9 +7,9 @@ import os
 import datetime
 from decimal import *
 
-from .models import *
-from .ItemInfo import *
-from .util import *
+from ..models import *
+from ..ItemInfo import *
+from ..util import *
 import naver.land as nl
 import naver.map as nm
 import gov.molit as molit
