@@ -129,7 +129,7 @@ dmypy.json
 .pyre/
 
 # Visual Studio Code
-.code-workspace
+workspace.code-workspace
 
 # Auto generated data
 realestate/json/*
