@@ -13,7 +13,7 @@ from ..util import *
 import naver.land as nl
 import naver.map as nm
 import gov.molit as molit
-import gov.kras as kras
+from gov.nsdi.price import HousePrice
 
 
 json_save_path = './realestate/json'
@@ -66,13 +66,13 @@ def declared_get(request):
         address = realestate.address_jibun
         addr_info = nm.addr_search(realestate.address_jibun)
         jibuns = addr_info.jibun.split('-')
-        bonbun = jibuns[0]
+        bonbun = int(jibuns[0])
         if 1 < len(jibuns):
-            bubun = jibuns[1]
+            bubun = int(jibuns[1])
         else:
-            bubun = ''
+            bubun = 0
         #print(f'{realestate.lawd_cd}, {bonbun}, {bubun}')
-        price_infos = kras.get_house_price(realestate.lawd_cd, bonbun, bubun)
+        price_infos = HousePrice.search(realestate.lawd_cd, 0, bonbun, bubun, 2021)
         #print(len(price_infos))
         if len(price_infos):
             result = 'Success'
@@ -264,7 +264,7 @@ def naver_register(request):
         bubun = jibuns[1]
     else:
         bubun = ''
-    price_infos = kras.get_house_price(addr_info.lawd_cd, bonbun, bubun)
+    price_infos = HousePrice.search(addr_info.lawd_cd, 0, bonbun, bubun)
 
     realestate = Realestate()
     realestate.address_jibun = land_item.address
