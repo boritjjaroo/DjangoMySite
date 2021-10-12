@@ -1,0 +1,133 @@
+{% load static %}
+{% load humanize %}
+{% load realestate_filter %}
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <link rel="stylesheet" type="text/css" href="{% static 'css/style.css' %}">
+        <style>
+            th { text-align: center; }
+        </style>
+        <link rel="stylesheet" href="//code.jquery.com/ui/1.13.0/themes/base/jquery-ui.css">
+        <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+        <script src="https://code.jquery.com/ui/1.13.0/jquery-ui.js"></script>
+        <script src="{% static 'js/common.js' %}"></script>
+        <script type="text/javascript">
+            $(function(){
+                $('.btn_owner').click(function() {
+                    var lawd_cd = $(this).attr('lawd_cd');
+                    var bonbun = $(this).attr('bonbun');
+                    var bubun = $(this).attr('bubun');
+                    $.ajax({
+                        type: "POST",
+                        url: "{% url 'realestate:arch_owner' %}",
+                        data: { 'lawd_cd': lawd_cd, 'bonbun': bonbun, 'bubun': bubun },
+                        dataType: "json",
+                        success: function(response) {
+                            if (response.result == "Success") {
+                                var name = response.list[0].owner
+                                var date = response.list[0].change_date
+                                //$("#owner_address").text();
+                                $("#owner_name").text(name);
+                                $("#owner_date").text(date);
+                                $("#dlg_owner").dialog({
+                                    modal: true,
+                                    //width: 300,
+                                });
+                            }
+                            else {
+                                alert(response.result);
+                            }
+                        },
+                        error: function(request, status, error) {
+                            alert(error);
+                        },
+                    });
+                });
+            });
+        </script>
+    </head>
+    <body>
+        <div id="dlg_owner" title="소유권" class="ui-helper-hidden">
+            <div id="owner_address"></div>
+            <table>
+                <tr>
+                    <th>소유자</th>
+                    <th>변동일</th>
+                </tr>
+                <tr>
+                    <td id="owner_name" style="text-align: center;"></td>
+                    <td id="owner_date" style="text-align: center;"></td>
+                </tr>
+            </table>
+        </div>
+        <div>
+            <form action="{% url 'realestate:price_search' %}" method="post" id="form_search">
+                {% csrf_token %}
+                <label>
+                    <span>지역</span>
+                    <select name="search_location">
+                        {% for item in location_code_list %}
+                        {% if search_location == item.code %}
+                        <option value="{{item.code}}" selected="selected">{{item.location}}</option>
+                        {% else %}
+                        <option value="{{item.code}}">{{item.location}}</option>
+                        {% endif %}
+                        {% endfor %}
+                    </select>
+                </label>
+                <div style="margin-top: 10px;">
+                    <label>
+                        <span>지번</span>
+                        <input type="text" name="search_bonbun" value="{{search_bonbun|default_if_none:''}}" style="width: 100px;">
+                        -
+                        <input type="text" name="search_bubun" value="{{search_bubun|default_if_none:''}}" style="width: 100px;">
+                    </label>
+                </div>
+                <div style="margin-top: 10px;">
+                    <label>
+                        <span>건축연도</span>
+                        <input type="text" name="search_year" value="{{search_year|default_if_none:''}}" style="width: 100px;">
+                    </label>
+                </div>
+                <div style="margin-top: 10px;">
+                    <label>
+                        <span>대지</span>
+                        <input type="text" name="search_area" value="{{search_area|default_if_none:''}}" style="width: 100px;">
+                    </label>
+            </div>
+                <div style="margin-top: 10px;">
+                    <input type="submit" value="검색">
+                </div>
+            </form>
+        </div>
+        <div>검색결과 : 총 {{list|length}} 건</div>
+        <table>
+            <tr>
+                <th width="300">주소</th>
+                <th width="80">지번</th>
+                <th width="60">대지</th>
+                <th width="60">연면적</th>
+                <th width="100">용도</th>
+                <th width="100">사용승인일</th>
+                <th>비고</th>
+            </tr>
+            {% for item in list %}
+            <tr>
+                <td>{{search_address}}</td>
+                <td style="text-align: center;">{{item.jibun}}</td>
+                <td style="text-align: center;">{{item.plot_area}}</td>
+                <td style="text-align: center;">{{item.building_total_area}}</td>
+                <td style="text-align: center;">{{item.detail_purpose}}</td>
+                <td style="text-align: center;">{{item.use_date}}</td>
+                <td>
+                    <div>
+                        <input type="button" class="btn_owner" lawd_cd="{{item.lawd_cd}}" bonbun="{{item.bonbun}}" bubun="{{item.bubun}}" value="소유권">
+                    </div>
+            </td>
+            </tr>
+            {% endfor %}
+        </table>
+    </body>
+</html>

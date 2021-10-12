@@ -12,8 +12,8 @@ from ..ItemInfo import *
 from ..util import *
 import naver.land as nl
 import naver.map as nm
-import gov.molit as molit
 from gov.nsdi.price import HousePrice
+from gov.data.archown import ArchOwn
 
 
 json_save_path = './realestate/json'
@@ -359,87 +359,25 @@ def check(request):
     context = { 'result': result }
     return HttpResponse(json.dumps(context), content_type="application/json")
 
-def price(request):
-    price_list = []
-    amount_average = 0
-    amount_min = 9999999999
-    amount_max = 0
+def arch_owner(request):
+    result = 'Fail'
+    list = []
+    try:
+        lawd_cd = request.POST.get('lawd_cd')
+        bonbun_s = request.POST.get('bonbun')
+        if bonbun_s:
+            bonbun = int(bonbun_s)
+        else:
+            bonbun = 0
+        bubun_s = request.POST.get('bubun')
+        if bubun_s:
+            bubun = int(bubun_s)
+        else:
+            bubun = 0
+        list = ArchOwn.search(lawd_cd, 0, bonbun, bubun)
+        result = 'Success'
+    except:
+        pass
 
-    search_location = request.POST.get('search_location')
-    search_category = request.POST.get('search_category')
-    search_year = request.POST.get('search_year')
-    filter_location = request.POST.get('filter_location')
-    filter_address = request.POST.get('filter_address')
-    filter_jimok = request.POST.get('filter_jimok')
-    filter_usage = request.POST.get('filter_usage')
-    filter_road = request.POST.get('filter_road')
-
-    #print(filter_location)
-
-    if search_location is not None:
-        search_results = molit.get_real_sale_price(search_category, search_location, search_year)
-
-        print(f'국토부 검색결과 {len(search_results)}개')
-        #print(search_results)
-
-        amount_sum = 0
-
-        for item in search_results:
-            # 검색 조건 필터링
-            if len(filter_location) > 0 and item.location != filter_location:
-                continue
-            if len(filter_address) > 0 and item.address != filter_address:
-                continue
-            if len(filter_jimok) > 0 and item.jimok != filter_jimok:
-                continue
-            if len(filter_usage) > 0 and item.region_usage != filter_usage:
-                continue
-            if len(filter_road) > 0 and item.road_length != filter_road:
-                continue
-
-            price_info = PriceInfo()
-            price_info.price = item
-
-            # 실제 대상물 검색
-            deal_date = datetime.date(int(search_year), item.deal_month, item.deal_day)
-            realestates = Realestate.objects.filter(deal_price=item.amount, deal_date=deal_date)
-            if 0 < len(realestates):
-                price_info.realestate = realestates[0]
-            price_list.append(price_info)
-
-            # 최소, 최대, 평균금액 계산
-            amount_sum = amount_sum + item.amount_per_area
-            if amount_max < item.amount_per_area:
-                amount_max = item.amount_per_area
-            if item.amount_per_area < amount_min:
-                amount_min = item.amount_per_area
-
-    # 최소, 최대, 평균금액 계산
-    if len(price_list) > 0:
-        amount_average = round(amount_sum / len(price_list))
-    else:
-        amount_min = 0
-
-    #print(price_list)
-    price_list.sort(key=lambda item: (item.price.deal_month, item.price.deal_day), reverse=True)
-
-    location_code = LocationCode.objects.order_by('location')
-
-    context = {
-        'list': price_list,
-        'location_code_list': location_code,
-        'category_list': molit.search_category,
-        'search_location': search_location,
-        'search_category': search_category,
-        'search_year': search_year,
-        'filter_location': filter_location,
-        'filter_address': filter_address,
-        'filter_jimok': filter_jimok,
-        'filter_usage': filter_usage,
-        'filter_road': filter_road,
-        'amount_average': amount_average,
-        'amount_min': amount_min,
-        'amount_max': amount_max,
-    }
-
-    return render(request, 'realestate/price.html', context)
+    context = { 'result': result, 'list': list }
+    return JsonResponse(context, encoder=MyJsonEncoder)
