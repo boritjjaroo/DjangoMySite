@@ -281,7 +281,7 @@ def naver_register(request):
     #realestate.sewage
     if 0 < len(price_infos):
         realestate.declared_value = price_infos[0].price
-        realestate.declared_value_date = price_infos[0].date
+        realestate.declared_value_date = yyyymmdd_to_date(price_infos[0].date)
     #realestate.deal_price
     #realestate.deal_date
     #realestate.is_favorite
