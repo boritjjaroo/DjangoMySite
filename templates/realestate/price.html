@@ -12,8 +12,67 @@
         <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
         <script src="{% static 'js/common.js' %}"></script>
         <script type="text/javascript">
+
+            var search_lawd_cd = "{{search_lawd_cd}}"
+
+            function FillJibunSelectCombo(lawd_cd, category) {
+                $.ajax({
+                    type: "POST",
+                    url: "{% url 'realestate:jibun_list' %}",
+                    data: { 'lawd_cd': lawd_cd, 'category': category },
+                    dataType: "json",
+                    success: function(response) {
+                        var id = '#search_' + category;
+                        $(id).empty();
+                        if (response.result == "Success") {
+                            if (0 < response.list.length) {
+                                var option = $('<option value="">선택</option>');
+                                $(id).append(option);
+                                var selIndex = -1
+                                $.each(response.list, function(index, item) {
+                                    option = $('<option value="'+item.code+'">'+item.name+'</option>');
+                                    if (search_lawd_cd.startsWith(item.code)) {
+                                        option.prop('selected', true);
+                                        selIndex = $(id).length;
+                                    }
+                                    $(id).append(option);
+                                });
+                                if (0 <= selIndex) {
+                                    $(id).selectedIndex = selIndex;
+                                    $(id).trigger('change');
+                                }
+                            }
+                        }
+                        else { alert(response.result); }
+                    },
+                    error: function(request, status, error) { alert(error); },
+                });
+            }
+
             $(function(){
+                FillJibunSelectCombo('', 'sido');
+
+                $('#search_sido').change(function() {
+                    search_lawd_cd = $(this).val();
+                    FillJibunSelectCombo(search_lawd_cd, 'sigungu');
+                });
+
+                $('#search_sigungu').change(function() {
+                    search_lawd_cd = $(this).val();
+                    FillJibunSelectCombo(search_lawd_cd, 'eupmyundong');
+                });
+
+                $('#search_eupmyundong').change(function() {
+                    search_lawd_cd = $(this).val();
+                    FillJibunSelectCombo(search_lawd_cd, 'ri');
+                });
+
+                $('#search_ri').change(function() {
+                    search_lawd_cd = $(this).val();
+                });
+
                 $('#btn_submit').click(function() {
+                    $('#search_lawd_cd').val(search_lawd_cd)
                     $('#form_search').submit();
                 });
                 
@@ -36,6 +95,25 @@
                         {% endfor %}
                     </select>
                 </label>
+                <div>
+                    <input type="hidden" id="search_lawd_cd" name="search_lawd_cd" value="{{search_lawd_cd}}" />
+                    <label>
+                        <span>시도</span>
+                        <select id="search_sido" name="search_sido"></select>
+                    </label>
+                    <label>
+                        <span>시군구</span>
+                        <select id="search_sigungu" name="search_sigungu"></select>
+                    </label>
+                    <label>
+                        <span>읍면동</span>
+                        <select id="search_eupmyundong" name="search_eupmyundong"></select>
+                    </label>
+                    <label>
+                        <span>리</span>
+                        <select id="search_ri" name="search_ri"></select>
+                    </label>
+                </div>
                 <fieldset style="margin-top: 10px;">
                     <legend>부동산 종류</legend>
                     <div>
@@ -143,8 +221,8 @@
                     <td style="text-align: center;">{{item.price.build_year}}년</td>
                     <td style="text-align: center;">{{item.price.structure|default_if_none:""}}</td>
                     <td style="text-align: right;">
-                        {{item.price.amount|manwon|intcomma}}만원<br>
-                        <span style="font-size: smaller;">({{item.price.amount_per_area|manwon|intcomma}}만원/평)</span>
+                        {{item.price.price|manwon|intcomma}}만원<br>
+                        <span style="font-size: smaller;">({{item.price.price_per_area|manwon|intcomma}}만원/평)</span>
                     </td>
                     <td>{{item.price.cancel_ymd|default_if_none:""}}</td>
                     {% if item.realestate %}

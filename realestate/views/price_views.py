@@ -3,7 +3,7 @@ from django.shortcuts import render
 
 from ..models import *
 from ..ItemInfo import *
-import gov.molit as molit
+from gov.molit import *
 from gov.nsdi.building import BuildingInfo
 
 def price(request):
@@ -13,6 +13,7 @@ def price(request):
     amount_max = 0
 
     search_location = request.POST.get('search_location')
+    search_lawd_cd = request.POST.get('search_lawd_cd', '')
     search_category = request.POST.get('search_category')
     search_year = request.POST.get('search_year')
     filter_location = request.POST.get('filter_location')
@@ -24,7 +25,12 @@ def price(request):
     #print(filter_location)
 
     if search_location is not None:
-        search_results = molit.get_real_sale_price(search_category, search_location, search_year)
+        if search_category == 'C':
+            search_results = RealPriceDandok.search(1, search_location, search_year)
+        elif search_category == 'G':
+            search_results = RealPriceLand.search(search_location, search_year)
+        else:
+            search_results = []
 
         print(f'국토부 검색결과 {len(search_results)}개')
         #print(search_results)
@@ -48,18 +54,18 @@ def price(request):
             price_info.price = item
 
             # 실제 대상물 검색
-            deal_date = datetime.date(int(search_year), item.deal_month, item.deal_day)
-            realestates = Realestate.objects.filter(deal_price=item.amount, deal_date=deal_date)
+            deal_date = datetime.date(int(search_year), item.month, item.day)
+            realestates = Realestate.objects.filter(deal_price=item.price, deal_date=deal_date)
             if 0 < len(realestates):
                 price_info.realestate = realestates[0]
             price_list.append(price_info)
 
             # 최소, 최대, 평균금액 계산
-            amount_sum = amount_sum + item.amount_per_area
-            if amount_max < item.amount_per_area:
-                amount_max = item.amount_per_area
-            if item.amount_per_area < amount_min:
-                amount_min = item.amount_per_area
+            amount_sum = amount_sum + item.price_per_area
+            if amount_max < item.price_per_area:
+                amount_max = item.price_per_area
+            if item.price_per_area < amount_min:
+                amount_min = item.price_per_area
 
     # 최소, 최대, 평균금액 계산
     if len(price_list) > 0:
@@ -68,15 +74,16 @@ def price(request):
         amount_min = 0
 
     #print(price_list)
-    price_list.sort(key=lambda item: (item.price.deal_month, item.price.deal_day), reverse=True)
+    price_list.sort(key=lambda item: (item.price.month, item.price.day), reverse=True)
 
     location_code = LocationCode.objects.order_by('location')
 
     context = {
         'list': price_list,
         'location_code_list': location_code,
-        'category_list': molit.search_category,
+        'category_list': RealPrice.search_category,
         'search_location': search_location,
+        'search_lawd_cd': search_lawd_cd,
         'search_category': search_category,
         'search_year': search_year,
         'filter_location': filter_location,

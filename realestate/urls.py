@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import base_views, address_views, price_views
+from .views import base_views, address_views, price_views, jibun_views
 
 app_name = 'realestate'
 
@@ -22,4 +22,6 @@ urlpatterns = [
     path('address/', address_views.address, name='address'),
     path('address/load/', address_views.address_load, name='address_load'),
     path('address/upload/', address_views.address_upload, name='address_upload'),
+
+    path('jibun/list/', jibun_views.jibun_list, name='jibun_list'),
 ]
