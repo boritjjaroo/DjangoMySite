@@ -1,0 +1,127 @@
+{% load static %}
+{% load humanize %}
+{% load realestate_filter %}
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <link rel="stylesheet" type="text/css" href="{% static 'css/style.css' %}">
+    <style>
+        th {
+            text-align: center;
+        }
+
+        .tab {
+            overflow: hidden;
+            border: 1px solid #ccc;
+            background-color: #f1f1f1;
+        }
+
+        /* Style the buttons that are used to open the tab content */
+        .tab button {
+            background-color: inherit;
+            float: left;
+            border: none;
+            outline: none;
+            cursor: pointer;
+            padding: 14px 16px;
+            transition: 0.3s;
+        }
+
+        /* Change background color of buttons on hover */
+        .tab button:hover {
+            background-color: #ddd;
+        }
+
+        /* Create an active/current tablink class */
+        .tab button.active {
+            background-color: #ccc;
+        }
+
+        /* Style the tab content */
+        .tabcontent {
+            display: none;
+            padding: 6px 12px;
+            border: 1px solid #ccc;
+            border-top: none;
+        }
+    </style>
+    <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+    <script src="{% static 'js/common.js' %}"></script>
+    <script type="text/javascript">
+        var search_pnu = "{{search_pnu}}"
+
+        function openTab(evt, tabName) {
+            // Declare all variables
+            var i, tabcontent, tablinks;
+
+            // Get all elements with class="tabcontent" and hide them
+            tabcontent = document.getElementsByClassName("tabcontent");
+            for (i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].style.display = "none";
+            }
+
+            // Get all elements with class="tablinks" and remove the class "active"
+            tablinks = document.getElementsByClassName("tablinks");
+            for (i = 0; i < tablinks.length; i++) {
+                tablinks[i].className = tablinks[i].className.replace(" active", "");
+            }
+
+            // Show the current tab, and add an "active" class to the button that opened the tab
+            document.getElementById(tabName).style.display = "block";
+            evt.currentTarget.className += " active";
+        }
+
+        $(function () {
+
+            // Get the element with id="defaultOpen" and click on it
+            document.getElementById("defaultOpen").click();
+
+            $('#btn_search').click(function () {
+                $('#search_lawd_cd').val(search_lawd_cd)
+                $('#form_search').submit();
+            });
+
+        });
+    </script>
+</head>
+
+<body>
+    <div class="tab">
+        <button class="tablinks" onclick="openTab(event, 'London')" id="defaultOpen">London</button>
+        <button class="tablinks" onclick="openTab(event, 'Paris')">Paris</button>
+        <button class="tablinks" onclick="openTab(event, 'Owner')">소유자</button>
+    </div>
+
+    <!-- Tab content -->
+    <div id="London" class="tabcontent">
+        <h3>London</h3>
+        <p>London is the capital city of England.</p>
+    </div>
+
+    <div id="Paris" class="tabcontent">
+        <h3>Paris</h3>
+        <p>Paris is the capital of France.</p>
+    </div>
+
+    <div id="Owner" class="tabcontent">
+        <h3>소유자</h3>
+        <table>
+            <tr>
+                <th>소유자</th>
+                <th>지분</th>
+                <th>변동일</th>
+            </tr>
+            {% for owner in owners %}
+            <tr>
+                <td style="text-align: center;">{{owner.owner}}</td>
+                <td style="text-align: center;">{{owner.quota}}</td>
+                <td style="text-align: center;">{{owner.change_date}}</td>
+            </tr>
+            {% endfor %}
+        </table>>
+    </div>
+</body>
+
+</html>

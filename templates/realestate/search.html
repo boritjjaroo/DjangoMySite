@@ -1,0 +1,199 @@
+{% load static %}
+{% load humanize %}
+{% load realestate_filter %}
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <link rel="stylesheet" type="text/css" href="{% static 'css/style.css' %}">
+        <style>
+            th { text-align: center; }
+        </style>
+        <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+        <script src="{% static 'js/common.js' %}"></script>
+        <script type="text/javascript">
+
+            var search_lawd_cd = "{{search_lawd_cd}}"
+
+            function FillJibunSelectCombo(lawd_cd, category) {
+                $.ajax({
+                    type: "POST",
+                    url: "{% url 'realestate:jibun_list' %}",
+                    data: { 'lawd_cd': lawd_cd, 'category': category },
+                    dataType: "json",
+                    success: function(response) {
+                        var id = '#search_' + category;
+                        $(id).empty();
+                        if (response.result == "Success") {
+                            if (0 < response.list.length) {
+                                var option = $('<option value="">선택</option>');
+                                $(id).append(option);
+                                var selIndex = -1
+                                $.each(response.list, function(index, item) {
+                                    option = $('<option value="'+item.code+'">'+item.name+'</option>');
+                                    if (search_lawd_cd.startsWith(item.code)) {
+                                        option.prop('selected', true);
+                                        selIndex = $(id).length;
+                                    }
+                                    $(id).append(option);
+                                });
+                                if (0 <= selIndex) {
+                                    $(id).selectedIndex = selIndex;
+                                    $(id).trigger('change', [true]);
+                                }
+                            }
+                        }
+                        else { alert(response.result); }
+                    },
+                    error: function(request, status, error) { alert(error); },
+                });
+            }
+
+            $(function(){
+                FillJibunSelectCombo('', 'sido');
+
+                $('#search_sido').change(function(event, isScriptCall) {
+                    if (!isScriptCall)
+                        search_lawd_cd = $(this).val();
+                    FillJibunSelectCombo(search_lawd_cd, 'sigungu');
+                });
+
+                $('#search_sigungu').change(function(event, isScriptCall) {
+                    if (!isScriptCall)
+                        search_lawd_cd = $(this).val();
+                    FillJibunSelectCombo(search_lawd_cd, 'eupmyundong');
+                });
+
+                $('#search_eupmyundong').change(function(event, isScriptCall) {
+                    if (!isScriptCall)
+                        search_lawd_cd = $(this).val();
+                    FillJibunSelectCombo(search_lawd_cd, 'ri');
+                });
+
+                $('#search_ri').change(function() {
+                    search_lawd_cd = $(this).val();
+                });
+
+                $('#btn_search').click(function() {
+                    $('#search_lawd_cd').val(search_lawd_cd)
+                    $('#form_search').submit();
+                });
+                
+                $('.btn_bldinfo').click(function() {
+                    var pnu = $(this).attr('pnu');
+                    var url = "{% url 'realestate:bldinfo' %}?pnu=" + pnu;
+                    var popup = window.open(url, '건축물정보', 'scrollbars=yes');
+                });
+                
+            });
+        </script>
+    </head>
+    <body>
+        <div>
+            <form action="{% url 'realestate:search' %}" method="post" id="form_search">
+                {% csrf_token %}
+                <div>
+                    <input type="hidden" id="search_lawd_cd" name="search_lawd_cd" value="{{search_lawd_cd}}" />
+                    <label>
+                        <span>시도</span>
+                        <select id="search_sido" name="search_sido"></select>
+                    </label>
+                    <label>
+                        <span>시군구</span>
+                        <select id="search_sigungu" name="search_sigungu"></select>
+                    </label>
+                    <label>
+                        <span>읍면동</span>
+                        <select id="search_eupmyundong" name="search_eupmyundong"></select>
+                    </label>
+                    <label>
+                        <span>리</span>
+                        <select id="search_ri" name="search_ri"></select>
+                    </label>
+                    <label>
+                        <span>본번</span>
+                        <input type="text" name="search_bonbun" value="{{search_bonbun}}" style="width: 60px;">
+                    </label>
+                    -
+                    <label>
+                        <span>부번</span>
+                        <input type="text" name="search_bubun" value="{{search_bubun}}" style="width: 60px;">
+                    </label>
+                </div>
+                <fieldset style="margin-top: 10px;">
+                    <legend>부동산 종류</legend>
+                    <div>
+                        {% for item in category_list.items %}
+                            {% if not search_category and forloop.counter == 3 %}
+                        <input type="radio" id="{{item.1}}" name="search_category" value="{{item.1}}" checked>
+                            {% elif item.1 == search_category %}
+                        <input type="radio" id="{{item.1}}" name="search_category" value="{{item.1}}" checked>
+                            {% else %}
+                        <input type="radio" id="{{item.1}}" name="search_category" value="{{item.1}}">
+                            {% endif %}
+                        <label for="search_category">{{item.0}}</label>
+                        {% endfor %}
+                    </div>
+                </fieldset>
+                <div style="margin-top: 10px;">
+                    <label>
+                        <span>지목 필터</span>
+                        <input type="text" name="filter_jimok" value="{{filter_jimok|default_if_none:''}}" style="width: 300px;">
+                    </label>
+                </div>
+                <div style="margin-top: 10px;">
+                    <label>
+                        <span>용도 필터</span>
+                        <input type="text" name="filter_usage" value="{{filter_usage|default_if_none:''}}" style="width: 300px;">
+                    </label>
+                </div>
+                <div style="margin-top: 10px;">
+                    <label>
+                        <span>도로조건 필터</span>
+                        <input type="text" name="filter_road" value="{{filter_road|default_if_none:''}}" style="width: 300px;">
+                    </label>
+                </div>
+                <div style="margin-top: 10px;">
+                    <input type="button" id="btn_search" value="검색">
+                </div>
+            </form>
+        </div>
+        <div>
+            검색결과 : 총 {{list|length}} 건
+        </div>
+        <div>
+            <table>
+                <tr>
+                    <th style="width: 300px;">주소</th>
+                    <th style="width: 120px;">용도</th>
+                    <th style="width: 120px;">면적</th>
+                    <th style="width: 60px;">층수</th>
+                    <th style="width: 80px;">사용승인일</th>
+                    <th style="width: 120px;">건축구조</th>
+                    <th>기타</th>
+                </tr>
+                {% for item in list %}
+                    <td>{{item.address}}</td>
+                    <td style="text-align: center;">
+                        {{item.main_purpose}}<br>
+                        {{item.detail_purpose}}<br>
+                    </td>
+                    <td>
+                        대지: {{item.plot_area|intcomma}}㎡<br>
+                        건축면적: {{item.building_area|intcomma}}㎡<br>
+                        연면적: {{item.building_total_area|intcomma}}㎡<br>
+                    </td>
+                    <td style="text-align: center;">{{item.ground_floor}} / B{{item.under_floor}}</td>
+                    <td style="text-align: center;">{{item.use_approve_date}}</td>
+                    <td style="text-align: center;">{{item.structure}}</td>
+                    <td>
+                        <div>
+                            <input type="button" class="btn_bldinfo" pnu="{{item.pnu}}" value="건축물정보">
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </table>
+        </div>
+    </body>
+</html>
