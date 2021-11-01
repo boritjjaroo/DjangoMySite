@@ -30,7 +30,8 @@ IntnCard_Types = {
     2: 'Master',
     3: 'UnionPay',
     4: 'JCB',
-    999: '기타',
+    5: 'BC',
+    999: '없음',
 }
 
 # =============================================================================
@@ -71,10 +72,6 @@ class Deposit(models.Model):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.is_expiration_coming = False
-        if self.is_protected:
-            self.is_protected_str = '예'
-        else:
-            self.is_protected_str = '아니오'
 
     @property
     def type_str(self):
@@ -96,7 +93,6 @@ class CreditCard(models.Model):
     is_trans = models.BooleanField(default=False)
     is_cash = models.BooleanField(default=False)
     fee = models.IntegerField(default=0)
-    interest_rate = models.CharField(max_length=32, default='')
     # 발급일
     begin_date = models.DateField(null=True)
     # 해지일
@@ -108,6 +104,10 @@ class CreditCard(models.Model):
     # 설명
     description = models.CharField(max_length=1024, default='')
     order = models.IntegerField(default=999)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.is_expiration_coming = False
 
     @property
     def type_str(self):

@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load common_filter %}
+{% load humanize %}
 
 {% block style %}
 <style>
@@ -24,28 +25,26 @@
 {% endblock %}
 
 {% block contents %}
-<h3>계좌 검색조건</h3>
-<form action="{% url 'accbook:deposits' %}" method="post" id="form_search">
-    {% csrf_token %}
-</form>
-<h3>계좌 목록</h3>
+<h5>카드 목록</h5>
 <div class="tableFixHead" style="padding-bottom: 30px;">
     <table class="list">
         <thead>
             <tr>
-                <th width="40">id</th>
+                <th width="30">id</th>
                 <th width="30">순서</th>
-                <th width="120">금융기관</th>
-                <th width="200">계좌명</th>
-                <th width="130">계좌번호</th>
-                <th width="80">종류</th>
-                <th width="40">예금자보호</th>
-                <th width="60">상태</th>
-                <th width="50">이율</th>
-                <th width="80">개설일</th>
+                <th width="100">금융기관</th>
+                <th width="170">카드명</th>
+                <th width="150">카드번호</th>
+                <th width="40">종류</th>
+                <th width="40">상태</th>
+                <th width="50">해외</th>
+                <th width="40">교통</th>
+                <th width="40">현금인출</th>
+                <th width="60">연회비</th>
+                <th width="80">발급일</th>
                 <th width="80">해지일</th>
-                <th width="80">만기일</th>
-                <th width="200">설명</th>
+                <th width="80">유효기간</th>
+                <th width="150">설명</th>
                 <th>비고</th>
             </tr>
         </thead>
@@ -58,12 +57,14 @@
                 <td class="name">{{item.name}}</td>
                 <td class="number" style="text-align: center;">{{item.number}}</td>
                 <td class="deposit_type" style="text-align: center;">{{item.type_str}}</td>
-                <td class="is_protected" style="text-align: center;">{{item.is_protected|boolean_yn}}</td>
                 <td class="state" style="text-align: center;">{{item.state}}</td>
-                <td class="interest_rate" style="text-align: center;">{{item.interest_rate}}</td>
+                <td class="deposit_type" style="text-align: center;">{{item.intn_type_str}}</td>
+                <td class="is_protected" style="text-align: center;">{{item.is_trans|boolean_ox}}</td>
+                <td class="is_protected" style="text-align: center;">{{item.is_cash|boolean_ox}}</td>
+                <td class="interest_rate" style="text-align: right;">{{item.fee|intcomma}}</td>
                 <td class="begin_date" style="text-align: center;">{{item.begin_date|date:"Y-m-d"}}</td>
                 <td class="end_date" style="text-align: center;">{{item.end_date|date:"Y-m-d"}}</td>
-                <td class="expiration_date exp_{{item.is_expiration_coming}}" style="text-align: center;">{{item.expiration_date|date:"Y-m-d"}}</td>
+                <td class="expiration_date exp_{{item.is_expiration_coming}}" style="text-align: center;">{{item.valid_date|date:"Y-m-d"}}</td>
                 <td class="description">{{item.description}}</td>
                 <td></td>
             </tr>

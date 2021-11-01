@@ -113,3 +113,25 @@ def deposits(request):
         'list': deposits_list,
     }
     return render(request, 'accbook/deposits.html', context)
+
+
+# =============================================================================
+# 카드관리
+
+@login_required(login_url='common:login')
+def credit_card(request):
+    card_list = CreditCard.objects.order_by('order')
+
+    today = datetime.date.today()
+    nearest_item = None
+    for item in card_list:
+        if item.valid_date and (nearest_item is None or item.valid_date - today < nearest_item.valid_date - today):
+            nearest_item = item
+    
+    if nearest_item:
+        nearest_item.is_expiration_coming = True;
+
+    context = {
+        'list': card_list,
+    }
+    return render(request, 'accbook/creditcard.html', context)
