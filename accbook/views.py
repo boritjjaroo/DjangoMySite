@@ -1,14 +1,21 @@
 from django.shortcuts import redirect, render
 from django.http import HttpResponse
+from django.contrib.auth.decorators import login_required
 
 import datetime
 
-from .models import Accounts, Deposit
+from .models import Accounts, CreditCard, Deposit
 
+# =============================================================================
+# 가계부 메인
+    
 def index(request):
     context = {
     }
     return render(request, 'accbook/index.html', context)
+
+# =============================================================================
+# 계정과목 관리
 
 # 계정과목을 계층구조로 보여주기 위해 depth-first 방식으로 새 list에 추가하는 함수
 def append_child(list, list_ordered, depth, parent_id):
@@ -19,6 +26,7 @@ def append_child(list, list_ordered, depth, parent_id):
                 append_child(list, list_ordered, depth + 1, account.id)
 
 
+@login_required(login_url='common:login')
 def accounts(request):
     scroll_y_pos = request.session.get('_scroll_y_pos')
     if not scroll_y_pos:
@@ -27,10 +35,7 @@ def accounts(request):
     accounts_list = Accounts.objects.order_by('depth', 'order')
     accounts_list_ordered = []
 
-    for account in accounts_list:
-        if account.depth == 0:
-            accounts_list_ordered.append(account)
-            append_child(accounts_list, accounts_list_ordered, 1, account.id)
+    append_child(accounts_list, accounts_list_ordered, 0, None)
 
     context = {
         'list': accounts_list_ordered,
@@ -38,7 +43,10 @@ def accounts(request):
     }
     return render(request, 'accbook/accounts_list.html', context)
 
+# =============================================================================
+# 계정과목 수정
     
+@login_required(login_url='common:login')
 def accounts_modify(request):
     scroll_y_pos = request.POST.get('scroll_y_pos')
     id = request.POST.get('id')
@@ -74,12 +82,21 @@ def accounts_modify(request):
         if deposit:
             account_item.deposit = deposit
 
+    card_id = request.POST.get('card')
+    if card_id:
+        card = CreditCard.objects.get(id=card_id)
+        if card:
+            account_item.card = card
+
     account_item.save()
     
     request.session['_scroll_y_pos'] = scroll_y_pos
     return redirect('accbook:accounts')
 
+# =============================================================================
+# 계좌관리
 
+@login_required(login_url='common:login')
 def deposits(request):
     deposits_list = Deposit.objects.order_by('order')
 

@@ -1,81 +1,73 @@
-{% load static %}
-{% load humanize %}
-{% load accbook_filter %}
+{% extends 'base.html' %}
 
-<!DOCTYPE html>
-<html>
+{% block style %}
+<style>
+    th {
+        background-color: lightslategrey;
+        text-align: center;
+    }
+    tr.state_해지 {
+        background-color: grey;
+    }
+    td.exp_True {
+        background-color: coral;
+    }
+</style>
+{% endblock %}
 
-<head>
-    <meta charset="utf-8">
-    <link rel="stylesheet" type="text/css" href="{% static 'css/style.css' %}">
-    <style>
-        th {
-            background-color: lightslategrey;
-            text-align: center;
-        }
-        tr.state_해지 {
-            background-color: grey;
-        }
-        td.exp_True {
-            background-color: coral;
-        }
-    </style>
-    <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
-    <script src="{% static 'js/common.js' %}"></script>
-    <script type="text/javascript">
-        $(function () {
-        });
-    </script>
-</head>
+{% block javascript %}
+<script type="text/javascript">
+    $(function () {
+    });
+</script>
+{% endblock %}
 
-<body>
-    <h3>계좌 검색조건</h3>
-    <form action="{% url 'accbook:deposits' %}" method="post" id="form_search">
-        {% csrf_token %}
-    </form>
-    <h3>계좌 목록</h3>
-    <div class="tableFixHead" style="padding-bottom: 30px;">
-        <table class="list">
-            <thead>
-                <tr>
-                    <th width="40">id</th>
-                    <th width="30">순서</th>
-                    <th width="120">금융기관</th>
-                    <th width="200">계좌명</th>
-                    <th width="130">계좌번호</th>
-                    <th width="80">종류</th>
-                    <th width="40">예금자보호</th>
-                    <th width="60">상태</th>
-                    <th width="50">이율</th>
-                    <th width="80">개설일</th>
-                    <th width="80">해지일</th>
-                    <th width="80">만기일</th>
-                    <th width="200">설명</th>
-                    <th>비고</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for item in list %}
-                <tr class="state_{{item.state}}">
-                    <td class="id" style="text-align: center;">{{item.id}}</td>
-                    <td class="order" style="text-align: center;">{{item.order}}</td>
-                    <td class="fn_inst" style="text-align: center;">{{item.fn_inst.name}}</td>
-                    <td class="name">{{item.name}}</td>
-                    <td class="number" style="text-align: center;">{{item.number}}</td>
-                    <td class="deposit_type" style="text-align: center;">{{item.type_str}}</td>
-                    <td class="is_protected" style="text-align: center;">{{item.is_protected_str}}</td>
-                    <td class="state" style="text-align: center;">{{item.state}}</td>
-                    <td class="interest_rate" style="text-align: center;">{{item.interest_rate}}</td>
-                    <td class="begin_date" style="text-align: center;">{{item.begin_date|date:"Y-m-d"}}</td>
-                    <td class="end_date" style="text-align: center;">{{item.end_date|date:"Y-m-d"}}</td>
-                    <td class="expiration_date exp_{{item.is_expiration_coming}}" style="text-align: center;">{{item.expiration_date|date:"Y-m-d"}}</td>
-                    <td class="description">{{item.description}}</td>
-                    <td></td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</body>
-
-</html>
+{% block contents %}
+<h3>계좌 검색조건</h3>
+<form action="{% url 'accbook:deposits' %}" method="post" id="form_search">
+    {% csrf_token %}
+</form>
+<h3>계좌 목록</h3>
+<div class="tableFixHead" style="padding-bottom: 30px;">
+    <table class="list">
+        <thead>
+            <tr>
+                <th width="40">id</th>
+                <th width="30">순서</th>
+                <th width="120">금융기관</th>
+                <th width="200">계좌명</th>
+                <th width="130">계좌번호</th>
+                <th width="80">종류</th>
+                <th width="40">예금자보호</th>
+                <th width="60">상태</th>
+                <th width="50">이율</th>
+                <th width="80">개설일</th>
+                <th width="80">해지일</th>
+                <th width="80">만기일</th>
+                <th width="200">설명</th>
+                <th>비고</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in list %}
+            <tr class="state_{{item.state}}">
+                <td class="id" style="text-align: center;">{{item.id}}</td>
+                <td class="order" style="text-align: center;">{{item.order}}</td>
+                <td class="fn_inst" style="text-align: center;">{{item.fn_inst.name}}</td>
+                <td class="name">{{item.name}}</td>
+                <td class="number" style="text-align: center;">{{item.number}}</td>
+                <td class="deposit_type" style="text-align: center;">{{item.type_str}}</td>
+                <td class="is_protected" style="text-align: center;">{{item.is_protected_str}}</td>
+                <td class="state" style="text-align: center;">{{item.state}}</td>
+                <td class="interest_rate" style="text-align: center;">{{item.interest_rate}}</td>
+                <td class="begin_date" style="text-align: center;">{{item.begin_date|date:"Y-m-d"}}</td>
+                <td class="end_date" style="text-align: center;">{{item.end_date|date:"Y-m-d"}}</td>
+                <td class="expiration_date exp_{{item.is_expiration_coming}}" style="text-align: center;">{{item.expiration_date|date:"Y-m-d"}}</td>
+                <td class="description">{{item.description}}</td>
+                <td></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

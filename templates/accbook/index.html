@@ -1,22 +1,9 @@
-{% load static %}
-{% load humanize %}
-<!DOCTYPE html>
-<html>
-
-<head>
-    <meta charset="utf-8">
-    <link rel="stylesheet" type="text/css" href="{% static 'css/style.css' %}">
-    <style>
-    </style>
-    <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
-    <script src="{% static 'js/common.js' %}"></script>
-    <script type="text/javascript">
-    </script>
-</head>
-
-<body>
-    <p><a href="{% url 'accbook:accounts' %}">계정과목 관리</a></p>
-    <p><a href="{% url 'accbook:deposits' %}">계좌 관리</a></p>
-</body>
-
-</html>
+{% extends 'base.html' %}
+{% block contents %}
+{% if user.is_authenticated %}
+<p><a href="{% url 'accbook:accounts' %}">계정과목 관리</a></p>
+<p><a href="{% url 'accbook:deposits' %}">계좌 관리</a></p>
+{% else %}
+로그인 하세요.
+{% endif %}
+{% endblock %}

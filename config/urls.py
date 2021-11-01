@@ -16,10 +16,13 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from realestate.views import base_views
+import accbook
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('realestate/', include('realestate.urls')),
     path('mmd/', include('mmd.urls')),
     path('accbook/', include('accbook.urls')),
+    path('common/', include('common.urls')),
+    #path('', accbook.views.index, name='index'),  # '/' 에 해당되는 path
 ]

@@ -4,6 +4,7 @@ FnInst_Types = {
     1: '1금융권',
     2: '2금융권',
     3: '증권사',
+    4: '카드사',
     999: '기타',
 }
 
@@ -13,6 +14,22 @@ Deposit_Types = {
     3: '정기적금',
     4: 'ISA',
     5: '연금저축',
+    999: '기타',
+}
+
+Card_Types = {
+    1: '체크',
+    2: '신용',
+    3: '선불',
+    4: '더미',
+    999: '기타',
+}
+
+IntnCard_Types = {
+    1: 'Visa',
+    2: 'Master',
+    3: 'UnionPay',
+    4: 'JCB',
     999: '기타',
 }
 
@@ -68,6 +85,43 @@ class Deposit(models.Model):
 
 
 # =============================================================================
+# 카드
+class CreditCard(models.Model):
+    fn_inst = models.ForeignKey(FnInst, on_delete=models.CASCADE)
+    name = models.CharField(max_length=32, default='')
+    number = models.CharField(max_length=32, default='')
+    type = models.IntegerField(default=999)
+    intn_type = models.IntegerField(default=999)
+    state = models.CharField(max_length=32, default='정상')
+    is_trans = models.BooleanField(default=False)
+    is_cash = models.BooleanField(default=False)
+    fee = models.IntegerField(default=0)
+    interest_rate = models.CharField(max_length=32, default='')
+    # 발급일
+    begin_date = models.DateField(null=True)
+    # 해지일
+    end_date = models.DateField(null=True)
+    # 유효기간
+    valid_date = models.DateField(null=True)
+    # 결제 계좌
+    deposit = models.ForeignKey(Deposit, on_delete=models.SET_NULL, null=True)
+    # 설명
+    description = models.CharField(max_length=1024, default='')
+    order = models.IntegerField(default=999)
+
+    @property
+    def type_str(self):
+        return Card_Types[self.type]
+
+    @property
+    def intn_type_str(self):
+        return IntnCard_Types[self.intn_type]
+
+    def __str__(self) -> str:
+        return str(self.name)
+
+
+# =============================================================================
 # 계정과목
 class Accounts(models.Model):
     depth = models.IntegerField(default=0)
@@ -84,7 +138,8 @@ class Accounts(models.Model):
     # 일회성 여부
     is_temporary = models.BooleanField(default=False)
 
-    deposit = models.ForeignKey(Deposit, on_delete=models.CASCADE, null=True)
+    deposit = models.ForeignKey(Deposit, on_delete=models.SET_NULL, null=True)
+    card = models.ForeignKey(CreditCard, on_delete=models.SET_NULL, null=True)
 
     def __str__(self) -> str:
         return str(self.name)
