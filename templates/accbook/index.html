@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
 {% block contents %}
 {% if user.is_authenticated %}
+<p><a href="{% url 'accbook:monthly' %}">월별 관리</a></p>
 <p><a href="{% url 'accbook:accounts' %}">계정과목 관리</a></p>
 <p><a href="{% url 'accbook:deposits' %}">계좌 관리</a></p>
 <p><a href="{% url 'accbook:creditcard' %}">카드 관리</a></p>

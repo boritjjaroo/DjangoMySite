@@ -1,12 +1,7 @@
 {% extends 'base.html' %}
-
+{% load common_filter %}
 {% block style %}
 <style>
-    th {
-        background-color: lightslategrey;
-        text-align: center;
-    }
-
     tr.False.depth0 {
         background-color: #a0d1de;
     }
@@ -56,6 +51,8 @@
         $('#begin_date').val("");
         $('#end_date').val("");
         $('#is_slip').prop('checked', false);
+        $('#is_debit').prop('checked', false);
+        $('#is_both').prop('checked', false);
         $('#is_temporary').prop('checked', false);
         $('#deposit').val("");
         $('#card').val("");
@@ -92,7 +89,7 @@
             $('#form_modify').submit();
         });
 
-        $('table.list tr').click(function (e) {
+        $('table.accounts tr').click(function (e) {
             e.stopPropagation();
             if (selected_id) {
                 unselectTr(selected_id);
@@ -111,14 +108,16 @@
                 $('#order').val($(this).find('td.order').text());
                 $('#begin_date').val($(this).find('td.begin_date').text());
                 $('#end_date').val($(this).find('td.end_date').text());
-                $('#is_slip').prop('checked', $(this).find('td.is_slip').text() == "True");
-                $('#is_temporary').prop('checked', $(this).find('td.is_temporary').text() == "True");
+                $('#is_slip').prop('checked', $(this).find('td.is_slip').text() == "O");
+                $('#is_debit').prop('checked', $(this).find('td.is_debit').text() == "O");
+                $('#is_both').prop('checked', $(this).find('td.is_both').text() == "O");
+                $('#is_temporary').prop('checked', $(this).find('td.is_temporary').text() == "O");
                 $('#deposit').val($(this).find('td.deposit').text());
-                $('#card').val($(this).find('td.card').text());
+                $('#card').val($(this).find('td.card_id').text());
             }
         });
 
-        $('div.list').click(function (e) {
+        $('div.accounts').click(function (e) {
             if (selected_id) {
                 unselectTr(selected_id);
             }
@@ -129,14 +128,10 @@
 {% endblock %}
 
 {% block contents %}
-<h5>계정과목 검색조건</h5>
-<form action="{% url 'accbook:accounts' %}" method="post" id="form_search">
-    {% csrf_token %}
-</form>
 <h5>계정과목 목록</h5>
-<div class="tableFixHead" style="padding-bottom: 30px;">
-    <table class="list">
-        <thead>
+<div class="tableFixHead">
+    <table class="accounts table table-bordered table-sm">
+        <thead class="table-dark">
             <tr>
                 <th width="40">id</th>
                 <th width="40">depth</th>
@@ -150,6 +145,8 @@
                 <th width="80">시작날짜</th>
                 <th width="80">종료날짜</th>
                 <th width="40">전표생성가능</th>
+                <th width="40">차변?</th>
+                <th width="40">양쪽</th>
                 <th width="40">일회성</th>
                 <th width="40">계좌id</th>
                 <th width="40">카드id</th>
@@ -185,10 +182,12 @@
                 {% endif %}
                 <td class="begin_date" style="text-align: center;">{{item.begin_date|date:"Y-m-d"}}</td>
                 <td class="end_date" style="text-align: center;">{{item.end_date|date:"Y-m-d"}}</td>
-                <td class="is_slip" style="text-align: center;">{{item.is_slip}}</td>
-                <td class="is_temporary" style="text-align: center;">{{item.is_temporary}}</td>
+                <td class="is_slip" style="text-align: center;">{{item.is_slip|boolean_ox}}</td>
+                <td class="is_debit" style="text-align: center;">{{item.is_debit|boolean_ox}}</td>
+                <td class="is_both" style="text-align: center;">{{item.is_both|boolean_ox}}</td>
+                <td class="is_temporary" style="text-align: center;">{{item.is_temporary|boolean_ox}}</td>
                 <td class="deposit" style="text-align: center;">{{item.deposit.id|default_if_none:''}}</td>
-                <td class="card" style="text-align: center;">{{item.card.id|default_if_none:''}}</td>
+                <td class="card_id" style="text-align: center;">{{item.card.id|default_if_none:''}}</td>
                 <td>
                     {% if item.deposit %}
                     {{item.deposit.name}}
@@ -205,57 +204,69 @@
 <form action="{% url 'accbook:accounts_modify' %}" method="post" id="form_modify">
     {% csrf_token %}
     <input type="hidden" id="scroll_y_pos" name="scroll_y_pos">
-    <table>
-        <tr>
-            <th width="50">id</th>
-            <th width="50">depth</th>
-            <th width="50">부모id</th>
-            <th width="300">이름</th>
-            <th width="50">순서</th>
-            <th width="80">시작날짜</th>
-            <th width="80">종료날짜</th>
-            <th width="80">전표생성가능</th>
-            <th width="50">일회성</th>
-            <th width="50">계좌id</th>
-            <th width="50">카드id</th>
-            <th></th>
-        </tr>
-        <tr>
-            <td>
-                <input type="text" id="id" name="id" readonly>
-            </td>
-            <td>
-                <input type="text" id="depth" name="depth">
-            </td>
-            <td>
-                <input type="text" id="parent" name="parent">
-            </td>
-            <td>
-                <input type="text" id="name" name="name">
-            </td>
-            <td>
-                <input type="text" id="order" name="order">
-            </td>
-            <td>
-                <input type="date" id="begin_date" name="begin_date">
-            </td>
-            <td>
-                <input type="date" id="end_date" name="end_date">
-            </td>
-            <td>
-                <input type="checkbox" id="is_slip" name="is_slip">
-            </td>
-            <td>
-                <input type="checkbox" id="is_temporary" name="is_temporary">
-            </td>
-            <td>
-                <input type="text" id="deposit" name="deposit">
-            </td>
-            <td>
-                <input type="text" id="card" name="card">
-            </td>
-            <td></td>
-        </tr>
+    <table class="table table-sm">
+        <thead class="table-dark">
+            <tr>
+                <th width="50">id</th>
+                <th width="50">depth</th>
+                <th width="50">부모id</th>
+                <th width="300">이름</th>
+                <th width="50">순서</th>
+                <th width="80">시작날짜</th>
+                <th width="80">종료날짜</th>
+                <th width="80">전표생성가능</th>
+                <th width="50">차변</th>
+                <th width="50">양쪽</th>
+                <th width="50">일회성</th>
+                <th width="50">계좌id</th>
+                <th width="50">카드id</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>
+                    <input type="text" id="id" name="id" readonly>
+                </td>
+                <td>
+                    <input type="text" id="depth" name="depth">
+                </td>
+                <td>
+                    <input type="text" id="parent" name="parent">
+                </td>
+                <td>
+                    <input type="text" id="name" name="name">
+                </td>
+                <td>
+                    <input type="text" id="order" name="order">
+                </td>
+                <td>
+                    <input type="date" id="begin_date" name="begin_date">
+                </td>
+                <td>
+                    <input type="date" id="end_date" name="end_date">
+                </td>
+                <td>
+                    <input type="checkbox" id="is_slip" name="is_slip">
+                </td>
+                <td>
+                    <input type="checkbox" id="is_debit" name="is_debit">
+                </td>
+                <td>
+                    <input type="checkbox" id="is_both" name="is_both">
+                </td>
+                <td>
+                    <input type="checkbox" id="is_temporary" name="is_temporary">
+                </td>
+                <td>
+                    <input type="text" id="deposit" name="deposit">
+                </td>
+                <td>
+                    <input type="text" id="card" name="card">
+                </td>
+                <td></td>
+            </tr>
+        </tbody>
     </table>
     <div style="margin-top: 10px;">
         <input type="button" id="btn_reset_id" value="id초기화">

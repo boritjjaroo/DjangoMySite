@@ -36,6 +36,8 @@ IntnCard_Types = {
 
 # =============================================================================
 # 금융기관
+
+
 class FnInst(models.Model):
     name = models.CharField(max_length=32, default='')
     type = models.IntegerField(default=999)
@@ -138,6 +140,10 @@ class Accounts(models.Model):
     # 일회성 여부
     is_temporary = models.BooleanField(default=False)
 
+    # 차변, 대변 발생 여부
+    is_debit = models.BooleanField(default=False)
+    is_both = models.BooleanField(default=False)
+
     deposit = models.ForeignKey(Deposit, on_delete=models.SET_NULL, null=True)
     card = models.ForeignKey(CreditCard, on_delete=models.SET_NULL, null=True)
 
@@ -149,7 +155,10 @@ class Accounts(models.Model):
 # 전표
 class Slip(models.Model):
     date = models.DateTimeField()
-    desc = models.CharField(max_length=256)
+    target = models.CharField(max_length=32, default='')
+    desc = models.CharField(max_length=256, default='')
+    # 일회성 여부
+    is_temporary = models.BooleanField(default=False)
 
     def __str__(self) -> str:
         return str(self.desc)
@@ -159,9 +168,44 @@ class Slip(models.Model):
 # 전표항목
 class SlipData(models.Model):
     parent = models.ForeignKey(Slip, on_delete=models.CASCADE)
-    code = models.ForeignKey(Accounts, on_delete=models.CASCADE)
-    amount = models.BigIntegerField()
+    account = models.ForeignKey(Accounts, on_delete=models.CASCADE)
+    amount = models.BigIntegerField(default=0)
+    # 차변 여부
     is_debit = models.BooleanField(default=True)
 
     def __str__(self) -> str:
-        return str(self.code)
+        return str(self.account.name)
+
+# =============================================================================
+# 전표(데이터 처리용)
+
+
+class SlipDataView:
+    def __init__(self, slip_data):
+        self.account_id = slip_data.account.id
+        self.account_name = slip_data.account.name
+        self.amount = slip_data.amount
+        self.is_debit = slip_data.is_debit
+
+    def __str__(self) -> str:
+        return str(self.account_name)
+
+
+class SlipView:
+    def __init__(self):
+        self.slip = None
+        self.debits = []
+        self.credits = []
+        self.rows = 1
+
+    def append(self, data_view):
+        if data_view.is_debit:
+            self.debits.append(data_view)
+        else:
+            self.credits.append(data_view)
+
+    def calc_count(self):
+        self.rows = max([1, len(self.debits), len(self.credits)])
+
+    def __str__(self) -> str:
+        return str(self.slip.desc)
