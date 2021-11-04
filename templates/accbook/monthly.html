@@ -5,12 +5,6 @@
 
 {% block style %}
 <style>
-    .f_c_amount, .f_d_amount {
-        text-align: right;
-    }
-    .amount {
-        text-align: right;
-    }
 </style>
 {% endblock %}
 
@@ -71,9 +65,11 @@
 
     $(function () {
         var date_utc = new Date();
-        var date_local = new Date(date_utc.getTime() - (date_utc.getTimezoneOffset()*60*1000));
+        var date_local = new Date(date_utc.getTime() - (date_utc.getTimezoneOffset() * 60 * 1000));
         var now_str = date_local.toISOString();
         $('#f_date').val(now_str.substr(0, 16));
+        var y_pos = parseInt("{{scroll_y_pos}}");
+        $('#div_data').scrollTop(y_pos);
 
         $('.f_d_amount').change(function () {
             f_d_sum = 0
@@ -101,17 +97,19 @@
             if (f_d_sum != f_c_sum) {
                 alert('차변과 대변의 합계가 일치하지 않습니다.')
                 e.preventDefault();
+                return;
             }
-            $('.f_account').each(function () {
+            $('.f_d_account, .f_c_account').each(function () {
                 $(this).val($(this).attr('account'));
             });
-            $('.f_amount').each(function () {
+            $('.f_c_amount, .f_d_amount').each(function () {
                 var val = uncomma($(this).val());
                 $(this).val(val);
             });
+            $('#scroll_y_pos').val($('#div_data').scrollTop());
         });
 
-        $('.f_account').click(function () {
+        $('.f_d_account, .f_c_account').click(function () {
             popup_caller_id = $(this).attr("id");
             popup_caller_is_debit = $(this).hasClass('f_d_account');
             $('#account0').empty();
@@ -158,62 +156,66 @@
 <form action="{% url 'accbook:monthly' %}" method="post" id="form_register">
     {% csrf_token %}
     <input type="hidden" name="acc_month" value="{{acc_month}}">
+    <input type="hidden" id="scroll_y_pos" name="scroll_y_pos" value="{{scroll_y_pos}}">
     <div class="container my-4">
-        <div class="row align-items-middle">
+        <div class="row align-items-end justify-content-between">
             <div class="col-auto">
                 <h4>2022년 {{acc_month}}월</h4>
             </div>
-            <div class="col">
+            <div class="col-auto">
                 ({{date_today}})
             </div>
         </div>
-        <div class="row">
-            <div class="col">
-                <table class="table table-bordered table-sm align-middle">
-                    <thead class="table-light align-middle">
-                        <tr>
-                            <th rowspan="2" style="width: 50px;">날짜</th>
-                            <th rowspan="2">내용</th>
-                            <th rowspan="2" style="width: 150px;">거래처</th>
-                            <th colspan="2">차변</th>
-                            <th colspan="2">대변</th>
-                        </tr>
-                        <tr>
-                            <th style="width: 180px;">계정</th>
-                            <th style="width: 100px;">금액</th>
-                            <th style="width: 180px;">계정</th>
-                            <th style="width: 100px;">금액</th>
-                        </tr>
-                    </thead>
-                    <tbody class="align-middle">
-                        {% for slip in slip_list %}
-                        {% for debit, credit in slip.debits|zip:slip.credits %}
-                        <tr>
-                            {% if forloop.first %}
-                            <td rowspan="{{slip.rows}}">{{slip.slip.date|date:"m-d"}}</td>
-                            <td rowspan="{{slip.rows}}">{{slip.slip.desc}}</td>
-                            <td rowspan="{{slip.rows}}">{{slip.slip.target}}</td>
-                            {% endif %}
-                            {% if debit %}
-                            <td>{{debit.account_name}}</td>
-                            <td class="amount">{{debit.amount|intcomma}}</td>
-                            {% else %}
-                            <td class="table-secondary"></td>
-                            <td class="table-secondary"></td>
-                            {% endif %}
-                            {% if credit %}
-                            <td>{{credit.account_name}}</td>
-                            <td class="amount">{{credit.amount|intcomma}}</td>
-                            {% else %}
-                            <td class="table-secondary"></td>
-                            <td class="table-secondary"></td>
-                            {% endif %}
-                        </tr>
-                        {% endfor %}
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+        <div id="div_data" class="row overflow-auto" style="height: 200px;">
+            <table class="table table-bordered table-sm">
+                <thead class="table-light align-middle" style="position: sticky; top: 0; z-index: 1;">
+                    <tr>
+                        <th rowspan="2" style="width: 80px;">날짜</th>
+                        <th rowspan="2">내용</th>
+                        <th rowspan="2" style="width: 150px;">거래처</th>
+                        <th colspan="2">차변</th>
+                        <th colspan="2">대변</th>
+                    </tr>
+                    <tr>
+                        <th style="width: 180px;">계정</th>
+                        <th style="width: 100px;">금액</th>
+                        <th style="width: 180px;">계정</th>
+                        <th style="width: 100px;">금액</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for slip in slip_list %}
+                    <tr>
+                        <td title="{{slip.slip.id}}">
+                            <span>{{slip.slip.date|date:"m-d"}}</span>
+                            <span class="small">({{slip.slip.date|date:"H:i"}})</span>
+                        </td>
+                        <td>{{slip.slip.desc}}</td>
+                        <td>{{slip.slip.target}}</td>
+                        <td>
+                            {% for debit in slip.debits %}
+                            <div title="{{debit.id}}">{{debit.account_name}}</div>
+                            {% endfor %}
+                        </td>
+                        <td>
+                            {% for debit in slip.debits %}
+                            <div class="col me-1 text-end">{{debit.amount|intcomma}}</div>
+                            {% endfor %}
+                        </td>
+                        <td>
+                            {% for credit in slip.credits %}
+                            <div title="{{credit.id}}">{{credit.account_name}}</div>
+                            {% endfor %}
+                        </td>
+                        <td>
+                            {% for credit in slip.credits %}
+                            <div class="col me-1 text-end">{{credit.amount|intcomma}}</div>
+                            {% endfor %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     </div>
     <div class="container my-4">
@@ -244,26 +246,28 @@
                         {% for i in '12345'|make_list %}
                         <tr>
                             {% if forloop.first %}
-                            <td rowspan="6"><input type="datetime-local" id="f_date" name="f_date" class="form-control">
+                            <td rowspan="6"><input type="datetime-local" id="f_date" name="f_date" class="form-control form-control-sm">
                             </td>
-                            <td rowspan="6"><input type="text" id="f_desc" name="f_desc" class="form-control"></td>
-                            <td rowspan="6"><input type="text" id="f_target" name="f_target" class="form-control"></td>
+                            <td rowspan="6"><input type="text" id="f_desc" name="f_desc" class="form-control form-control-sm"></td>
+                            <td rowspan="6"><input type="text" id="f_target" name="f_target" class="form-control form-control-sm"></td>
                             {% endif %}
-                            <td><input type="text" id="f_d_account{{i}}" name="f_d_account[]" class="form-control f_account f_d_account"
-                                    readonly></td>
-                            <td><input type="text" id="f_d_amount{{i}}" name="f_d_amount[]" class="form-control f_amount f_d_amount" onkeyup="inputNumberComma(this)">
+                            <td><input type="text" id="f_d_account{{i}}" name="f_d_account[]"
+                                    class="form-control form-control-sm f_d_account" readonly></td>
+                            <td><input type="text" id="f_d_amount{{i}}" name="f_d_amount[]"
+                                    class="form-control form-control-sm f_d_amount text-end" onkeyup="inputNumberComma(this)">
                             </td>
-                            <td><input type="text" id="f_c_account{{i}}" name="f_c_account[]" class="form-control f_account f_c_account"
-                                    readonly></td>
-                            <td><input type="text" id="f_c_amount{{i}}" name="f_c_amount[]" class="form-control f_amount f_c_amount" onkeyup="inputNumberComma(this)">
+                            <td><input type="text" id="f_c_account{{i}}" name="f_c_account[]"
+                                    class="form-control form-control-sm f_c_account" readonly></td>
+                            <td><input type="text" id="f_c_amount{{i}}" name="f_c_amount[]"
+                                    class="form-control form-control-sm f_c_amount text-end" onkeyup="inputNumberComma(this)">
                             </td>
                         </tr>
                         {% endfor %}
                         <tr>
                             <td></td>
-                            <td id="f_d_sum" class="amount table-success">0</td>
+                            <td id="f_d_sum" class="text-end table-success">0</td>
                             <td></td>
-                            <td id="f_c_sum" class="amount table-success">0</td>
+                            <td id="f_c_sum" class="text-end table-success">0</td>
                         </tr>
                     </tbody>
                 </table>

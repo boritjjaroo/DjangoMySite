@@ -173,6 +173,7 @@ def monthly(request):
 
     acc_month = request.POST.get('acc_month', str(date_today.month))
     acc_month = int(acc_month)
+    scroll_y_pos = request.POST.get('scroll_y_pos')
 
     is_register_valid = True
     f_date = request.POST.get('f_date') # 2021-11-11T13:25 str type
@@ -229,6 +230,7 @@ def monthly(request):
     account1_list = Accounts.objects.filter(depth=0).order_by('order')
     context = {
         'acc_month': acc_month,
+        'scroll_y_pos': scroll_y_pos,
         'date_today': date_today,
         'slip_list': slip_list,
         'account1_list': account1_list,

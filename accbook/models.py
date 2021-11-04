@@ -182,6 +182,7 @@ class SlipData(models.Model):
 
 class SlipDataView:
     def __init__(self, slip_data):
+        self.id = slip_data.id
         self.account_id = slip_data.account.id
         self.account_name = slip_data.account.name
         self.amount = slip_data.amount
