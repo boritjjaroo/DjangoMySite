@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% load common_filter %}
+{% load accbook_filter %}
+
+{% block style %}
+<style>
+    div.scroll-panel { overflow-x: scroll; overflow-y: visible; }
+    .fixed-row { position: sticky; top: 0px; z-index: 1; }
+    .fixed-col1 { width: 80px; position: sticky; left: 0px; }
+    .fixed-col2 { width: 150px; position: sticky; left: 80px; }
+    .fixed-col3 { width: 200px; position: sticky; left: 230px; }
+    .depth0-row { background-color: hsl(330, 90%, 90%)}
+    .depth1-row { background-color: hsl(330, 90%, 96%)}
+    .depth2-row { background-color: hsl(330, 0%, 100%)}
+    .thead.depth0 { background-color: hsl(330, 80%, 85%)}
+    .thead.depth1 { background-color: hsl(330, 80%, 92%)}
+    .thead.depth2 { background-color: hsl(330, 0%, 95%)}
+    .thead.slip { background-color: hsl(330, 0%, 95%)}
+    .amount { text-align: right;}
+    .minus { color: red; }
+</style>
+{% endblock %}
+
+{% block javascript %}
+<script type="text/javascript">
+</script>
+{% endblock %}
+
+{% block contents %}
+<form action="{% url 'accbook:annual' %}" method="post" id="form_annual">
+    {% csrf_token %}
+    <input type="hidden" name="acc_year" value="{{acc_year}}">
+    <div class="container my-4">
+        <div class="row align-items-end justify-content-between">
+            <div class="col-auto">
+                <h4>{{acc_year}}년</h4>
+            </div>
+            <div class="col-auto">
+                ({{date_today}})
+            </div>
+        </div>
+        <div id="div_data" class="row scroll-panel" style="height: 500px;">
+            <table class="table table-bordered table-sm" style="min-width: 2000px;">
+                <thead class="table-light align-middle text-center fixed-row">
+                    <tr>
+                        <th class="fixed-col1">계정과목1</th>
+                        <th class="fixed-col2">계정과목2</th>
+                        <th class="fixed-col3">계정과목3</th>
+                        <th style="width: 80px;">합계</th>
+                        <th style="width: 80px;">평균</th>
+                        <th style="width: 80px;">{{acc_month}}월</th>
+                        <th style="width: 80px;">전년이월</th>
+                        {% for i in '123456789012'|make_list %}
+                        <th style="width: 80px;">{{forloop.counter}}월</th>
+                        {% endfor %}
+                        <th>비고</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in data_list %}
+                    {% if item.is_slip %}
+                    <tr class="depth2-row">
+                    {% elif item.depth == 0 %}
+                    <tr class="depth0-row">
+                    {% elif item.depth == 1 %}
+                    <tr class="depth1-row">
+                    {% else %}
+                    <tr class="depth2-row">
+                    {% endif %}
+                        <td class="fixed-col1 thead depth{{item.depth}} {{item.is_slip|yesno:'slip,,'}}">
+                            {% if item.depth == 0 %}
+                            {{item.name}}
+                            {% endif %}
+                        </td>
+                        <td class="fixed-col2 thead depth{{item.depth}} {{item.is_slip|yesno:'slip,,'}}">
+                            {% if item.depth == 1 %}
+                            {{item.name}}
+                            {% endif %}
+                        </td>
+                        <td class="fixed-col3 thead depth{{item.depth}} {{item.is_slip|yesno:'slip,,'}}">
+                            {% if item.depth == 2 %}
+                            {{item.name}}
+                            {% endif %}
+                        </td>
+                        <td class="amount {{item.amounts|list_item:sum_index|sign}}">{{item.amounts|list_item:sum_index|intcomma}}</td>
+                        <td class="amount {{item.amounts|list_item:avg_index|sign}}">{{item.amounts|list_item:avg_index|intcomma}}</td>
+                        <td class="amount {{item.amounts|list_item:acc_month|sign}}">{{item.amounts|list_item:acc_month|intcomma}}</td>
+
+                        {% for month in 0|range:13 %}
+                        <td class="amount {{item.amounts|list_item:month|sign}}">{{item.amounts|list_item:month|intcomma}}</td>
+                        {% endfor %}
+                        <td></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</form>
+{% endblock %}

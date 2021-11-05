@@ -8,7 +8,7 @@ import datetime
 from dateutil.relativedelta import relativedelta
 from json import JSONEncoder
 
-from .models import Accounts, CreditCard, Deposit, Slip, SlipData, SlipDataView, SlipView
+from .models import *
 
 # =============================================================================
 # 가계부 메인
@@ -208,9 +208,11 @@ def monthly(request):
 
         for data in debits:
             data.parent = slip
+            data.date = slip.date
             data.save()
         for data in credits:
             data.parent = slip
+            data.date = slip.date
             data.save()
 
     date_begin = datetime.datetime(2021,acc_month,1,tzinfo=KST)
@@ -276,3 +278,131 @@ def account_list(request):
         result = 'Success'
     context = { 'result': result, 'list': result_list }
     return JsonResponse(context, encoder=MyJsonEncoder)
+
+
+# =============================================================================
+# 1년 통계
+
+@login_required(login_url='common:login')
+def annual(request):
+    data_list = []
+    KST = datetime.timezone(datetime.timedelta(hours=9))
+    date_today = datetime.datetime.now(KST)
+
+    acc_year = request.POST.get('acc_year', str(date_today.year))
+    acc_year = int(acc_year)
+    acc_month = date_today.month
+
+    # 표시할 계정과목 목록 생성
+    print('Making annual data account list...')
+    accounts = Accounts.objects.order_by('depth', 'order')
+    accounts_ordered = []
+
+    append_child(accounts, accounts_ordered, 0, None)
+
+    for account in accounts_ordered:
+        annual = AnnualView(account)
+        data_list.append(annual)
+
+    # 속도 향상을 위해 dictionary에 추가 저장
+    data_list_dic = {}
+    asset_index = 0
+    debt_index = 0
+    capital_index = 0
+    for index, data in enumerate(data_list):
+        data_list_dic[data.id] = data
+        if data.id == Accounts.ASSET:
+            asset_index = index
+        elif data.id == Accounts.DEBT:
+            debt_index = index
+        elif data.id == Accounts.CAPITAL:
+            capital_index = index
+
+    # 월 단위로 계정과목 금액 계산
+
+    # 작년 이월 월마감 자료 조회
+    monthly_last = Monthly.objects.get(year=acc_year-1, month=12)
+    monthly_datas = MonthlyData.objects.filter(parent=monthly_last)
+    for monthly_data in monthly_datas:
+        annual = data_list_dic.get(monthly_data.account_id)
+        if annual:
+            annual.amounts[AnnualView.LAST] = monthly_data.amount
+
+    print('Calculating Monthly...')
+    for month in range(1, 13):
+        monthlys = Monthly.objects.filter(year=acc_year, month=month)
+        # 월마감이 존재하면 그대로 대입
+        if monthlys:
+            monthly_last = monthlys[0]
+            monthly_datas = MonthlyData.objects.filter(parent=monthly_last)
+            for monthly_data in monthly_datas:
+                annual = data_list_dic.get(monthly_data.account_id)
+                if annual:
+                    annual.amounts[month] = monthly_data.amount
+        # 월마감이 없을 경우 한 달치 데이터 계산
+        else:
+            # 대차대조표 계정은 전월 금액에 누적
+            for annual in data_list:
+                if annual.is_balance:
+                    annual.amounts[month] = annual.amounts[month-1]
+
+            date_begin = datetime.datetime(acc_year,month,1,tzinfo=KST)
+            date_end = date_begin + relativedelta(months=1)
+            slip_datas = SlipData.objects.filter(date__gte=date_begin, date__lt=date_end)
+
+            for slip_data in slip_datas:
+                annual = data_list_dic.get(slip_data.account_id)
+                if annual:
+                    if annual.is_debit == slip_data.is_debit:
+                        annual.amounts[month] += slip_data.amount
+                    else:
+                        annual.amounts[month] -= slip_data.amount
+
+            # 전표미생성 계정의 부분합 구하기
+            cur_sum = [0, 0, 0]
+            cur_depth = 2
+            for annual in reversed(data_list):
+                if annual.depth < cur_depth:
+                    if annual.is_slip:
+                        cur_depth = annual.depth
+                        cur_sum[cur_depth] += annual.amounts[month]
+                    else:
+                        annual.amounts[month] = cur_sum[cur_depth]
+                        cur_sum[cur_depth] = 0
+                        cur_depth = annual.depth
+                        cur_sum[cur_depth] += annual.amounts[month]
+                elif annual.depth > cur_depth:
+                    if annual.is_slip:
+                        cur_depth = annual.depth
+                        cur_sum[cur_depth] += annual.amounts[month]
+                    else:
+                        cur_sum[cur_depth] += annual.amounts[month]
+                        cur_depth = annual.depth
+                else: # annual.depth == cur_depth
+                    cur_sum[cur_depth] += annual.amounts[month]
+
+            # 자본 계정 계산
+            data_list[capital_index].amounts[month] = data_list[asset_index].amounts[month] - data_list[debt_index].amounts[month]
+
+            # 손익계산서 계정은 월별 합계를 구한다.
+            for annual in data_list:
+                if not annual.is_balance:
+                    annual.amounts[AnnualView.SUM] += annual.amounts[month]
+
+    print('Calculate sum and avg...')
+
+    for annual in data_list:
+        if annual.is_balance:
+            annual.amounts[AnnualView.SUM] = annual.amounts[12]
+        if 1 < acc_month:
+            annual.amounts[AnnualView.AVG] = int(annual.amounts[AnnualView.SUM] / (acc_month - 1))
+
+    context = {
+        'acc_year': acc_year,
+        'acc_month': acc_month,
+        'sum_index': AnnualView.SUM,
+        'avg_index': AnnualView.AVG,
+        'date_today': date_today,
+        'data_list': data_list,
+    }
+    return render(request, 'accbook/annual.html', context)

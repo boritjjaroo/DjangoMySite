@@ -59,8 +59,8 @@
                 <td class="deposit_type" style="text-align: center;">{{item.type_str}}</td>
                 <td class="state" style="text-align: center;">{{item.state}}</td>
                 <td class="deposit_type" style="text-align: center;">{{item.intn_type_str}}</td>
-                <td class="is_protected" style="text-align: center;">{{item.is_trans|boolean_ox}}</td>
-                <td class="is_protected" style="text-align: center;">{{item.is_cash|boolean_ox}}</td>
+                <td class="is_protected" style="text-align: center;">{{item.is_trans|yesno:"O,X,"}}</td>
+                <td class="is_protected" style="text-align: center;">{{item.is_cash|yesno:"O,X,"}}</td>
                 <td class="interest_rate" style="text-align: right;">{{item.fee|intcomma}}</td>
                 <td class="begin_date" style="text-align: center;">{{item.begin_date|date:"Y-m-d"}}</td>
                 <td class="end_date" style="text-align: center;">{{item.end_date|date:"Y-m-d"}}</td>

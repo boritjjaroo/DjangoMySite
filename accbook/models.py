@@ -125,7 +125,12 @@ class CreditCard(models.Model):
 
 # =============================================================================
 # 계정과목
+
 class Accounts(models.Model):
+    ASSET = 3
+    DEBT = 4
+    CAPITAL = 5
+
     depth = models.IntegerField(default=0)
     parent = models.BigIntegerField(null=True)
     name = models.CharField(max_length=32, default='')
@@ -143,6 +148,8 @@ class Accounts(models.Model):
     # 차변, 대변 발생 여부
     is_debit = models.BooleanField(default=False)
     is_both = models.BooleanField(default=False)
+    # 대차대조표 계정 여부
+    is_balance = models.BooleanField(default=True)
 
     deposit = models.ForeignKey(Deposit, on_delete=models.SET_NULL, null=True)
     card = models.ForeignKey(CreditCard, on_delete=models.SET_NULL, null=True)
@@ -172,13 +179,15 @@ class SlipData(models.Model):
     amount = models.BigIntegerField(default=0)
     # 차변 여부
     is_debit = models.BooleanField(default=True)
+    # 월마감 계산 편의를 위해 날짜 추가
+    date = models.DateTimeField(null=True)
 
     def __str__(self) -> str:
         return str(self.account.name)
 
+
 # =============================================================================
 # 전표(데이터 처리용)
-
 
 class SlipDataView:
     def __init__(self, slip_data):
@@ -210,3 +219,50 @@ class SlipView:
 
     def __str__(self) -> str:
         return str(self.slip.desc)
+
+
+# =============================================================================
+# 연간 통계
+
+class Monthly(models.Model):
+    year = models.IntegerField(default=2000)
+    month = models.IntegerField(default=1)
+    update_date = models.DateField()
+
+    def __str__(self) -> str:
+        return str(f'{self.year:04}-{self.month:02}')
+
+class MonthlyData(models.Model):
+    parent = models.ForeignKey(Monthly, on_delete=models.CASCADE)
+    account = models.ForeignKey(Accounts, on_delete=models.SET_NULL, null=True)
+    amount = models.BigIntegerField(default=0)
+
+    def __str__(self) -> str:
+        return str(f'{self.account.name} {self.amount}')
+
+
+# =============================================================================
+# 연간 통계(뷰)
+
+class AnnualView:
+    LAST = 0
+    SUM = 13
+    AVG = 14
+
+    def __init__(self, account):
+        self.parent = account.parent
+        self.id = account.id
+        self.name = account.name
+        self.depth = account.depth
+        self.is_slip = account.is_slip
+        self.is_debit = account.is_debit
+        self.is_balance = account.is_balance
+        # 0: 전년이월
+        # 1~12: 월
+        # 13: 합계
+        # 14: 평균
+        self.amounts = [0] * 15
+
+    def __str__(self) -> str:
+        return str(self.name)
+

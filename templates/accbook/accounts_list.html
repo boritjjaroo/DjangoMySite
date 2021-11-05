@@ -182,10 +182,10 @@
                 {% endif %}
                 <td class="begin_date" style="text-align: center;">{{item.begin_date|date:"Y-m-d"}}</td>
                 <td class="end_date" style="text-align: center;">{{item.end_date|date:"Y-m-d"}}</td>
-                <td class="is_slip" style="text-align: center;">{{item.is_slip|boolean_ox}}</td>
-                <td class="is_debit" style="text-align: center;">{{item.is_debit|boolean_ox}}</td>
-                <td class="is_both" style="text-align: center;">{{item.is_both|boolean_ox}}</td>
-                <td class="is_temporary" style="text-align: center;">{{item.is_temporary|boolean_ox}}</td>
+                <td class="is_slip" style="text-align: center;">{{item.is_slip|yesno:"O,X,"}}</td>
+                <td class="is_debit" style="text-align: center;">{{item.is_debit|yesno:"O,X,"}}</td>
+                <td class="is_both" style="text-align: center;">{{item.is_both|yesno:"O,X,"}}</td>
+                <td class="is_temporary" style="text-align: center;">{{item.is_temporary|yesno:"O,X,"}}</td>
                 <td class="deposit" style="text-align: center;">{{item.deposit.id|default_if_none:''}}</td>
                 <td class="card_id" style="text-align: center;">{{item.card.id|default_if_none:''}}</td>
                 <td>
