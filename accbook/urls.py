@@ -12,4 +12,6 @@ urlpatterns = [
     path('monthly/', views.monthly, name='monthly'),
     path('annual/', views.annual, name='annual'),
     path('account_list/', views.account_list, name='account_list'),
+    path('slip_list/', views.slip_list, name='slip_list'),
+    path('slip_register/', views.slip_register, name='slip_register'),
 ]

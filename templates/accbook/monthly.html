@@ -10,13 +10,85 @@
 
 {% block javascript %}
 <script type="text/javascript">
+    var acc_year = parseInt("{{acc_year}}");
+    var acc_month = parseInt("{{acc_month}}");
+    var scroll_y_pos = 0;
     var select_account_id = -1;
     var select_account_name = "";
     var select_account_is_slip = false;
-    var popup_caller_id = null;
+    var account_caller_id = null;
     var popup_caller_is_debit = false;
     var f_d_sum = 0;
     var f_c_sum = 0;
+
+    if (!String.prototype.format) {
+        String.prototype.format = function () {
+            var args = arguments;
+            return this.replace(/{(\d+)}/g, function (match, number) {
+                return typeof args[number] != 'undefined'
+                    ? args[number]
+                    : match
+                    ;
+            });
+        };
+    }
+
+    function LoadSlips(scrollBotton) {
+        $.ajax({
+            type: "POST",
+            url: "{% url 'accbook:slip_list' %}",
+            data: { 'acc_year': acc_year, 'acc_month': acc_month },
+            dataType: "json",
+            success: function (response) {
+                if (response.result == "Success") {
+                    scroll_y_pos = $('#div_data').scrollTop();
+                    $('#table_slips tbody').empty();
+                    $('#slip_count').text(response.list.length);
+                    $.each(response.list, function (index, item) {
+                        var tr = $('<tr></tr>');
+                        var datetimes = item.slip.date.split(' ');
+                        tr.append($(`<td class="text-center" title="${item.slip.id}"><span>${datetimes[0]}</span>
+                            <span class="small">(${datetimes[1]})</span></td>`));
+                        tr.append($(`<td>${item.slip.desc}</td>`));
+                        tr.append($(`<td>${item.slip.target}</td>`));
+
+                        var td = $(`<td></td>`);
+                        $.each(item.debits, function (i, debit) {
+                            td.append($(`<div title="${debit.id}">${debit.account_name}</div>`));
+                        });
+                        tr.append(td);
+                        td = $(`<td></td>`);
+                        $.each(item.debits, function (i, debit) {
+                            var amount_str = comma(debit.amount);
+                            td.append($(`<div class="col me-1 text-end">${amount_str}</div>`));
+                        });
+                        tr.append(td);
+
+                        var td = $(`<td></td>`);
+                        $.each(item.credits, function (i, credit) {
+                            td.append($(`<div title="${credit.id}">${credit.account_name}</div>`));
+                        });
+                        tr.append(td);
+                        td = $(`<td></td>`);
+                        $.each(item.credits, function (i, credit) {
+                            var amount_str = comma(credit.amount);
+                            td.append($(`<div class="col me-1 text-end">${amount_str}</div>`));
+                        });
+                        tr.append(td);
+
+                        $('#table_slips tbody').append(tr);
+                    });
+
+                    if (scrollBotton)
+                        $('#div_data').scrollTop(10000);
+                    else
+                        $('#div_data').scrollTop(scroll_y_pos);
+                }
+                else { alert(response.result); }
+            },
+            error: function (request, status, error) { alert(error); },
+        });
+    }
 
     function FillAccountSelect(depth, parent_id, is_debit) {
         $.ajax({
@@ -33,7 +105,7 @@
                             if (item.is_slip) {
                                 is_slip = "slip=\"1\"";
                             }
-                            option = $('<option value="' + item.id + '" ' + is_slip + '>' + item.name + '</option>');
+                            var option = $('<option value="' + item.id + '" ' + is_slip + '>' + item.name + '</option>');
                             $(id).append(option);
                         });
                     }
@@ -63,13 +135,30 @@
         }
     }
 
-    $(function () {
+    function resetRegisterForm() {
         var date_utc = new Date();
         var date_local = new Date(date_utc.getTime() - (date_utc.getTimezoneOffset() * 60 * 1000));
         var now_str = date_local.toISOString();
         $('#f_date').val(now_str.substr(0, 16));
-        var y_pos = parseInt("{{scroll_y_pos}}");
-        $('#div_data').scrollTop(y_pos);
+        $('#f_target').val('');
+        $('#f_desc').val('');
+        for (i = 1; i < 6; i++) {
+            $('#f_d_account' + i).val('');
+            $('#f_c_account' + i).val('');
+            $('#f_d_amount' + i).val('');
+            $('#f_c_amount' + i).val('');
+        }
+        $('#f_d_sum').val('0');
+        $('#f_c_sum').val('0');
+    }
+
+    $(function () {
+        resetRegisterForm();
+        LoadSlips(true);
+
+        $('#btn_register_popup').click(function () {
+            $('#popup_register').modal('show');
+        })
 
         $('.f_d_amount').change(function () {
             f_d_sum = 0
@@ -93,10 +182,13 @@
             checkAmount();
         });
 
-        $('#form_register').submit(function (e) {
+        $('#btn_reset').click(function () {
+            resetRegisterForm();
+        });
+
+        $('#btn_register').click(function () {
             if (f_d_sum != f_c_sum) {
                 alert('차변과 대변의 합계가 일치하지 않습니다.')
-                e.preventDefault();
                 return;
             }
             $('.f_d_account, .f_c_account').each(function () {
@@ -106,17 +198,37 @@
                 var val = uncomma($(this).val());
                 $(this).val(val);
             });
-            $('#scroll_y_pos').val($('#div_data').scrollTop());
+
+            var form_data = $("#form_register").serialize();
+            $.ajax({
+                type: "POST",
+                url: "{% url 'accbook:slip_register' %}",
+                data: form_data,
+                dataType: "json",
+                success: function (response) {
+                    if (response.result == "Success") {
+                        $('#popup_register').modal('hide');
+                        LoadSlips();
+                    }
+                    else { alert(response.result); }
+                },
+                error: function (request, status, error) { alert(error); },
+            });
         });
 
         $('.f_d_account, .f_c_account').click(function () {
-            popup_caller_id = $(this).attr("id");
+            account_caller_id = $(this).attr("id");
             popup_caller_is_debit = $(this).hasClass('f_d_account');
             $('#account0').empty();
             $('#account1').empty();
             $('#account2').empty();
             FillAccountSelect(0, null, popup_caller_is_debit);
-            $('#popup_account').modal('show');
+        });
+
+        $('.account_reset').click(function () {
+            var input_text = $(this).siblings('input')
+            input_text.val('');
+            input_text.attr('account', '');
         });
 
         $('.select_account').change(function () {
@@ -132,20 +244,10 @@
                 FillAccountSelect(depth + 1, select_account_id, popup_caller_is_debit);
         });
 
-        $("#popup_account").on("hidden.bs.modal", function (event) {
-        });
-
-        $('#btn_select').click(function () {
-            if (popup_caller_id && select_account_is_slip) {
-                $('#' + popup_caller_id).val(select_account_name);
-                $('#' + popup_caller_id).attr('account', select_account_id);
-            }
-        });
-
-        $('#btn_reset').click(function () {
-            if (popup_caller_id) {
-                $('#' + popup_caller_id).val('');
-                $('#' + popup_caller_id).attr('account', '');
+        $('.select_account').dblclick(function () {
+            if (account_caller_id && select_account_is_slip) {
+                $('#' + account_caller_id).val(select_account_name);
+                $('#' + account_caller_id).attr('account', select_account_id);
             }
         });
     });
@@ -153,22 +255,23 @@
 {% endblock %}
 
 {% block contents %}
-<form action="{% url 'accbook:monthly' %}" method="post" id="form_register">
+<form action="{% url 'accbook:monthly' %}" method="post" id="form_monthly">
     {% csrf_token %}
-    <input type="hidden" name="acc_month" value="{{acc_month}}">
-    <input type="hidden" id="scroll_y_pos" name="scroll_y_pos" value="{{scroll_y_pos}}">
     <div class="container my-4">
-        <div class="row align-items-end justify-content-between">
+        <div class="row align-items-end">
             <div class="col-auto">
-                <h4>2022년 {{acc_month}}월</h4>
+                <h4>{{acc_year}}년 {{acc_month}}월</h4>
             </div>
             <div class="col-auto">
+                (<div id="slip_count" class="d-inline">0</div>건)
+            </div>
+            <div class="col text-end">
                 ({{date_today}})
             </div>
         </div>
-        <div id="div_data" class="row overflow-auto" style="height: 200px;">
-            <table class="table table-bordered table-sm">
-                <thead class="table-light align-middle" style="position: sticky; top: 0; z-index: 1;">
+        <div id="div_data" class="row overflow-auto" style="height: 450px;">
+            <table id="table_slips" class="table table-bordered table-striped table-sm">
+                <thead class="table-light align-middle text-center" style="position: sticky; top: 0; z-index: 1;">
                     <tr>
                         <th rowspan="2" style="width: 80px;">날짜</th>
                         <th rowspan="2">내용</th>
@@ -184,144 +287,143 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for slip in slip_list %}
-                    <tr>
-                        <td title="{{slip.slip.id}}">
-                            <span>{{slip.slip.date|date:"m-d"}}</span>
-                            <span class="small">({{slip.slip.date|date:"H:i"}})</span>
-                        </td>
-                        <td>{{slip.slip.desc}}</td>
-                        <td>{{slip.slip.target}}</td>
-                        <td>
-                            {% for debit in slip.debits %}
-                            <div title="{{debit.id}}">{{debit.account_name}}</div>
-                            {% endfor %}
-                        </td>
-                        <td>
-                            {% for debit in slip.debits %}
-                            <div class="col me-1 text-end">{{debit.amount|intcomma}}</div>
-                            {% endfor %}
-                        </td>
-                        <td>
-                            {% for credit in slip.credits %}
-                            <div title="{{credit.id}}">{{credit.account_name}}</div>
-                            {% endfor %}
-                        </td>
-                        <td>
-                            {% for credit in slip.credits %}
-                            <div class="col me-1 text-end">{{credit.amount|intcomma}}</div>
-                            {% endfor %}
-                        </td>
-                    </tr>
-                    {% endfor %}
                 </tbody>
             </table>
         </div>
-    </div>
-    <div class="container my-4">
-        <div class="row">
-            <div class="col">
-                <h5>전표 등록</h5>
-            </div>
-        </div>
-        <div class="row">
-            <div class="col">
-                <table class="table table-bordered table-sm">
-                    <thead class="table-light">
-                        <tr class="align-middle">
-                            <th rowspan="2" style="width: 150px;">날짜</th>
-                            <th rowspan="2">내용</th>
-                            <th rowspan="2" style="width: 150px;">거래처</th>
-                            <th colspan="2">차변</th>
-                            <th colspan="2">대변</th>
-                        </tr>
-                        <tr>
-                            <th style="width: 180px;">계정</th>
-                            <th style="width: 100px;">금액</th>
-                            <th style="width: 180px;">계정</th>
-                            <th style="width: 100px;">금액</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for i in '12345'|make_list %}
-                        <tr>
-                            {% if forloop.first %}
-                            <td rowspan="6"><input type="datetime-local" id="f_date" name="f_date" class="form-control form-control-sm">
-                            </td>
-                            <td rowspan="6"><input type="text" id="f_desc" name="f_desc" class="form-control form-control-sm"></td>
-                            <td rowspan="6"><input type="text" id="f_target" name="f_target" class="form-control form-control-sm"></td>
-                            {% endif %}
-                            <td><input type="text" id="f_d_account{{i}}" name="f_d_account[]"
-                                    class="form-control form-control-sm f_d_account" readonly></td>
-                            <td><input type="text" id="f_d_amount{{i}}" name="f_d_amount[]"
-                                    class="form-control form-control-sm f_d_amount text-end" onkeyup="inputNumberComma(this)">
-                            </td>
-                            <td><input type="text" id="f_c_account{{i}}" name="f_c_account[]"
-                                    class="form-control form-control-sm f_c_account" readonly></td>
-                            <td><input type="text" id="f_c_amount{{i}}" name="f_c_amount[]"
-                                    class="form-control form-control-sm f_c_amount text-end" onkeyup="inputNumberComma(this)">
-                            </td>
-                        </tr>
-                        {% endfor %}
-                        <tr>
-                            <td></td>
-                            <td id="f_d_sum" class="text-end table-success">0</td>
-                            <td></td>
-                            <td id="f_c_sum" class="text-end table-success">0</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-        <div class="row justify-content-end">
-            <div class="col col-sm-auto">
-                <input type="submit" id="f_submit" class="btn btn-primary btn-lg" value="등록">
+        <div class="row mt-4">
+            <div class="col col-auto">
+                <input type="button" class="form-control btn-primary btn-lg" style="width: 100px;" id="btn_register_popup"
+                    value="전표 등록">
             </div>
         </div>
     </div>
 </form>
 
 <!-- Modal -->
-<div class="modal" id="popup_account" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+<div class="modal" id="popup_register" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="exampleModalLabel">계정과목 선택</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <form id="form_register">
+            {% csrf_token %}
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">전표 등록</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col col-10">
+                            <div class="row">
+                                <div class="col col-1">날짜</div>
+                                <div class="col col-4">
+                                    <input type="datetime-local" id="f_date" name="f_date"
+                                        class="form-control form-control-sm">
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col col-1">거래처</div>
+                                <div class="col col-4">
+                                    <input type="text" id="f_target" name="f_target"
+                                        class="form-control form-control-sm">
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col col-1">내용</div>
+                                <div class="col">
+                                    <input type="text" id="f_desc" name="f_desc" class="form-control form-control-sm">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col col-2">
+                            <div class="row m-1">
+                                <button type="button" id="btn_reset" class="btn btn-secondary">초기화</button>
+                            </div>
+                            <div class="row m-1">
+                                <button type="button" id="btn_register" class="btn btn-primary btn-lg">등 록</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mt-2">
+                        <table class="table table-bordered table-sm">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="col-4">계정</th>
+                                    <th class="col-2">금액</th>
+                                    <th class="col-4">계정</th>
+                                    <th class="col-2">금액</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for i in '12345'|make_list %}
+                                <tr>
+                                    <td>
+                                        <div class="input-group">
+                                            <input type="text" id="f_d_account{{i}}" name="f_d_account[]"
+                                                class="form-control form-control-sm f_d_account" index="{{i}}" readonly>
+                                            <button type="button"
+                                                class="btn btn-sm btn-outline-secondary account_reset">X</button>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <input type="text" id="f_d_amount{{i}}" name="f_d_amount[]"
+                                            class="form-control form-control-sm f_d_amount text-end" index="{{i}}"
+                                            onkeyup="inputNumberComma(this)">
+                                    </td>
+                                    <td>
+                                        <div class="input-group">
+                                            <input type="text" id="f_c_account{{i}}" name="f_c_account[]"
+                                                class="form-control form-control-sm f_c_account" index="{{i}}" readonly>
+                                            <button type="button"
+                                                class="btn btn-sm btn-outline-secondary account_reset">X</button>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <input type="text" id="f_c_amount{{i}}" name="f_c_amount[]"
+                                            class="form-control form-control-sm f_c_amount text-end" index="{{i}}"
+                                            onkeyup="inputNumberComma(this)">
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                                <tr>
+                                    <td></td>
+                                    <td id="f_d_sum" class="text-end table-success">0</td>
+                                    <td></td>
+                                    <td id="f_c_sum" class="text-end table-success">0</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="row">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th class="col-4">계정과목1</th>
+                                    <th class="col-4">계정과목2</th>
+                                    <th class="col-4">계정과목3</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>
+                                        <select id="account0" class="form-control select_account" depth="0" size="10">
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <select id="account1" class="form-control select_account" depth="1" size="10">
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <select id="account2" class="form-control select_account" depth="2" size="10">
+                                        </select>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                </div>
             </div>
-            <div class="modal-body">
-                <table class="table table-sm">
-                    <thead>
-                        <tr>
-                            <th style="width: 30%;">계정과목1</th>
-                            <th style="width: 35%;">계정과목2</th>
-                            <th style="width: 35%;">계정과목3</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>
-                                <select id="account0" class="form-control select_account" depth="0" size="10">
-                                </select>
-                            </td>
-                            <td>
-                                <select id="account1" class="form-control select_account" depth="1" size="10">
-                                </select>
-                            </td>
-                            <td>
-                                <select id="account2" class="form-control select_account" depth="2" size="10">
-                                </select>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-            <div class="modal-footer">
-                <button type="button" id="btn_reset" class="btn btn-secondary" data-bs-dismiss="modal">초기화</button>
-                <button type="button" id="btn_select" class="btn btn-primary btn-lg" data-bs-dismiss="modal">선
-                    택</button>
-            </div>
-        </div>
+        </form>
     </div>
 </div>
 {% endblock %}

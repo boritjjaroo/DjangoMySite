@@ -146,6 +146,26 @@ def credit_card(request):
 # =============================================================================
 # 월별 관리
 
+@login_required(login_url='common:login')
+def monthly(request):
+    KST = datetime.timezone(datetime.timedelta(hours=9))
+    date_today = datetime.datetime.now(KST)
+    acc_year = date_today.year
+    acc_month = date_today.month
+
+    account1_list = Accounts.objects.filter(depth=0).order_by('order')
+    context = {
+        'acc_year': acc_year,
+        'acc_month': acc_month,
+        'date_today': date_today,
+        'account1_list': account1_list,
+    }
+    return render(request, 'accbook/monthly.html', context)
+
+
+# =============================================================================
+# 전표 등록
+
 def make_slip_data_list(f_accounts, f_amounts, is_debit):
     lists = []
     sum = 0
@@ -166,17 +186,13 @@ def make_slip_data_list(f_accounts, f_amounts, is_debit):
     return lists, sum
 
 @login_required(login_url='common:login')
-def monthly(request):
-    slip_list = []
-    KST = datetime.timezone(datetime.timedelta(hours=9))
-    date_today = datetime.datetime.now(KST)
-
-    acc_month = request.POST.get('acc_month', str(date_today.month))
-    acc_month = int(acc_month)
-    scroll_y_pos = request.POST.get('scroll_y_pos')
+def slip_register(request):
+    result = 'Fail'
 
     is_register_valid = True
     f_date = request.POST.get('f_date') # 2021-11-11T13:25 str type
+    if f_date:
+        f_date += ' +0900'
     f_desc = request.POST.get('f_desc')
     f_target = request.POST.get('f_target')
     f_d_account = request.POST.getlist('f_d_account[]')
@@ -185,7 +201,7 @@ def monthly(request):
     f_c_amount = request.POST.getlist('f_c_amount[]')
 
     try:
-        slip_date = datetime.datetime.strptime(f_date, '%Y-%m-%dT%H:%M')
+        slip_date = datetime.datetime.strptime(f_date, '%Y-%m-%dT%H:%M %z')
     except:
         is_register_valid = False
         print(f'date invalid [{f_date}]')
@@ -215,29 +231,61 @@ def monthly(request):
             data.date = slip.date
             data.save()
 
-    date_begin = datetime.datetime(2021,acc_month,1,tzinfo=KST)
-    date_end = date_begin + relativedelta(months=1)
-    slips = Slip.objects.filter(date__gte=date_begin, date__lt=date_end).order_by('date')
-    for slip in slips:
-        slip_view = SlipView()
-        slip_view.slip = slip
-        data_list = SlipData.objects.filter(parent=slip)
-        for data in data_list:
-            data_view = SlipDataView(data)
-            slip_view.append(data_view)
+        result = 'Success'
 
-        slip_view.calc_count()
-        slip_list.append(slip_view)
+    print(f'accbook:slip_register : ({result})')
+    context = { 'result': result }
+    return JsonResponse(context)
 
-    account1_list = Accounts.objects.filter(depth=0).order_by('order')
-    context = {
-        'acc_month': acc_month,
-        'scroll_y_pos': scroll_y_pos,
-        'date_today': date_today,
-        'slip_list': slip_list,
-        'account1_list': account1_list,
-    }
-    return render(request, 'accbook/monthly.html', context)
+
+# =============================================================================
+# 해당 월 전표 목록을 json으로 리턴
+
+class MyJsonEncoderSlip(JSONEncoder):
+    def default(self, o):
+        if isinstance(o, datetime.date):
+            return o.strftime('%m-%d %H:%M')
+        if isinstance(o, datetime.datetime):
+            return o.strftime('%m-%d %H:%M')
+        return o.__dict__
+
+def slip_list(request):
+    result = 'Fail'
+    result_list = []
+    acc_year = request.POST.get('acc_year')
+    acc_month = request.POST.get('acc_month')
+
+    try:
+        if acc_year:
+            acc_year = int(acc_year)
+        if acc_month:
+            acc_month = int(acc_month)
+    except:
+        acc_year = None
+        acc_month = None
+
+    if acc_year and acc_month:
+        KST = datetime.timezone(datetime.timedelta(hours=9))
+        date_begin = datetime.datetime(acc_year,acc_month,1,tzinfo=KST)
+        date_end = date_begin + relativedelta(months=1)
+        slips = Slip.objects.filter(date__gte=date_begin, date__lt=date_end).order_by('date')
+        for slip in slips:
+            slip_view = SlipView()
+            slip_view.slip = slip
+            data_list = SlipData.objects.filter(parent=slip)
+            for data in data_list:
+                data_view = SlipDataView(data)
+                slip_view.append(data_view)
+
+            slip_view.calc_count()
+            result_list.append(slip_view)
+        result = 'Success'
+    else:
+        print(f'[Error] acc_year({acc_year}), acc_month({acc_month}) is invalid!')
+
+    print(f'accbook:slip_list : ({result}) ({len(result_list)})')
+    context = { 'result': result, 'list': result_list }
+    return JsonResponse(context, encoder=MyJsonEncoderSlip)
 
 
 # =============================================================================
