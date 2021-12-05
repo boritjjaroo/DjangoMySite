@@ -156,6 +156,28 @@
         resetRegisterForm();
         LoadSlips(true);
 
+        $('#btn_prev_month').click(function () {
+            if (acc_month == 1) {
+                $('#acc_year').val(acc_year - 1);
+                $('#acc_month').val(12);
+            }
+            else {
+                $('#acc_month').val(acc_month - 1);
+            }
+            $('#form_monthly').submit();
+        })
+
+        $('#btn_next_month').click(function () {
+            if (acc_month == 12) {
+                $('#acc_year').val(acc_year + 1);
+                $('#acc_month').val(1);
+            }
+            else {
+                $('#acc_month').val(acc_month + 1);
+            }
+            $('#form_monthly').submit();
+        })
+
         $('#btn_register_popup').click(function () {
             $('#popup_register').modal('show');
         })
@@ -257,10 +279,20 @@
 {% block contents %}
 <form action="{% url 'accbook:monthly' %}" method="post" id="form_monthly">
     {% csrf_token %}
+    <input type="hidden" id="acc_year" name="acc_year" value="{{acc_year}}">
+    <input type="hidden" id="acc_month" name="acc_month" value="{{acc_month}}">
     <div class="container my-4">
         <div class="row align-items-end">
             <div class="col-auto">
+                <input type="button" class="form-control btn-secondary btn-sm" id="btn_prev_month"
+                    value="이전">
+            </div>
+            <div class="col-auto">
                 <h4>{{acc_year}}년 {{acc_month}}월</h4>
+            </div>
+            <div class="col-auto">
+                <input type="button" class="form-control btn-secondary btn-sm" id="btn_next_month"
+                    value="다음">
             </div>
             <div class="col-auto">
                 (<div id="slip_count" class="d-inline">0</div>건)
@@ -269,26 +301,28 @@
                 ({{date_today}})
             </div>
         </div>
-        <div id="div_data" class="row overflow-auto" style="height: 450px;">
-            <table id="table_slips" class="table table-bordered table-striped table-sm">
-                <thead class="table-light align-middle text-center" style="position: sticky; top: 0; z-index: 1;">
-                    <tr>
-                        <th rowspan="2" style="width: 80px;">날짜</th>
-                        <th rowspan="2">내용</th>
-                        <th rowspan="2" style="width: 150px;">거래처</th>
-                        <th colspan="2">차변</th>
-                        <th colspan="2">대변</th>
-                    </tr>
-                    <tr>
-                        <th style="width: 180px;">계정</th>
-                        <th style="width: 100px;">금액</th>
-                        <th style="width: 180px;">계정</th>
-                        <th style="width: 100px;">금액</th>
-                    </tr>
-                </thead>
-                <tbody>
-                </tbody>
-            </table>
+        <div class="row">
+            <div id="div_data" class="overflow-auto" style="height: 1000px;">
+                <table id="table_slips" class="table table-bordered table-striped table-sm">
+                    <thead class="table-light align-middle text-center" style="position: sticky; top: 0; z-index: 1;">
+                        <tr>
+                            <th rowspan="2" style="width: 80px;">날짜</th>
+                            <th rowspan="2">내용</th>
+                            <th rowspan="2" style="width: 150px;">거래처</th>
+                            <th colspan="2">차변</th>
+                            <th colspan="2">대변</th>
+                        </tr>
+                        <tr>
+                            <th style="width: 180px;">계정</th>
+                            <th style="width: 100px;">금액</th>
+                            <th style="width: 180px;">계정</th>
+                            <th style="width: 100px;">금액</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    </tbody>
+                </table>
+            </div>
         </div>
         <div class="row mt-4">
             <div class="col col-auto">

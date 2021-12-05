@@ -150,8 +150,12 @@ def credit_card(request):
 def monthly(request):
     KST = datetime.timezone(datetime.timedelta(hours=9))
     date_today = datetime.datetime.now(KST)
-    acc_year = date_today.year
-    acc_month = date_today.month
+
+    acc_year = request.POST.get('acc_year')
+    acc_month = request.POST.get('acc_month')
+    if not acc_year or not acc_month:
+        acc_year = date_today.year
+        acc_month = date_today.month
 
     account1_list = Accounts.objects.filter(depth=0).order_by('order')
     context = {
