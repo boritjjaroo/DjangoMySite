@@ -1,0 +1,246 @@
+{% extends 'base.html' %}
+{% load common_filter %}
+{% load humanize %}
+
+{% block style %}
+<style>
+    th {
+        background-color: lightslategrey;
+        text-align: center;
+    }
+    tr.state_sold {
+        background-color: grey;
+    }
+</style>
+{% endblock %}
+
+{% block javascript %}
+<script type="text/javascript">
+    // local time, ISO Date format : YYYY-MM-DD
+    var begin_date = "{{begin_date}}";
+    var end_date = "{{end_date}}";
+
+    function LoadTrades(scrollBotton) {
+        $.ajax({
+            type: "POST",
+            url: "{% url 'accbook:fntrade_list' %}",
+            data: { 'begin_date': begin_date, 'end_date': end_date },
+            dataType: "json",
+            success: function (response) {
+                if (response.result == "Success") {
+                    scroll_y_pos = $('#div_data').scrollTop();
+                    $('#fntrade_list tbody').empty();
+                    $('#fntrade_count').text(response.list.length);
+                    $.each(response.list, function (index, item) {
+
+                        var tr = $('<tr></tr>');
+                        if (item.sell_date) {
+                            tr.attr("class", "state_sold");
+                        }
+                        tr.append($(`<td style="text-align: center;">${item.id}</td>`));
+                        tr.append($(`<td style="text-align: center;">${item.buy_date}</td>`));
+                        tr.append($(`<td>${item.fn_inst}</td>`));
+                        tr.append($(`<td>${item.fn_deposit}</td>`));
+                        tr.append($(`<td>${item.fn_prod}</td>`));
+                        tr.append($(`<td style="text-align: right;">${comma(item.buy_price)}</td>`));
+                        tr.append($(`<td style="text-align: right;">${comma(item.quantity)}</td>`));
+                        tr.append($(`<td style="text-align: right;">${comma(item.buy_price*item.quantity)}</td>`));
+                        if (item.sell_date) {
+                            tr.append($(`<td style="text-align: center;">${item.sell_date}</td>`));
+                            tr.append($(`<td style="text-align: right;">${comma(item.sell_price)}</td>`));
+                            tr.append($(`<td style="text-align: right;">${comma(item.sell_price*item.quantity)}</td>`));
+                        }
+                        else {
+                            tr.append($(`<td></td>`));
+                            tr.append($(`<td></td>`));
+                            tr.append($(`<td></td>`));
+                        }
+                        tr.append($(`<td></td>`));
+
+                        $('#fntrade_list tbody').append(tr);
+                    });
+
+                    if (scrollBotton)
+                        $('#div_data').scrollTop(10000);
+                    else
+                        $('#div_data').scrollTop(scroll_y_pos);
+                }
+                else { alert(response.result); }
+            },
+            error: function (request, status, error) { alert(error); },
+        });
+    }
+
+    $(function () {
+        var date_utc = new Date();
+        var date_local = new Date(date_utc.getTime() - (date_utc.getTimezoneOffset() * 60 * 1000));
+        var now_str = date_local.toISOString();
+        $('#f_date').val(now_str.substr(0, 16));
+
+        LoadTrades(true);
+
+        $('#btn_buy_popup').click(function () {
+            $('#popup_buy').modal('show');
+        })
+
+        $('.fn_prod').change(function () {
+            $('#f_prod').val($(this).val());
+            $('#f_prod_text').val($("#fn_prod option:selected").text());
+        });
+
+        $('#btn_register').click(function () {
+            date = new Date($('#f_date').val());
+            date_begin = new Date(2000,1,1);
+            date_now = new Date();
+            id = parseInt($('#f_prod').val());
+            price = parseFloat($('#f_price').val());
+            quantity = parseFloat($('#f_quantity').val());
+            fee = parseFloat($('#f_fee').val());
+            if (Number(date) < Number(date_begin) || Number(date_now) < Number(date)) {
+                alert('날짜가 올바르지 않습니다.')
+                return;
+            }
+            if (isNaN(id)) {
+                alert('금융상품을 선택해 주세요.')
+                return;
+            }
+            if (isNaN(price)) {
+                alert('단가가 올바르지 않습니다.')
+                return;
+            }
+            if (isNaN(quantity)) {
+                alert('수량이 올바르지 않습니다.')
+                return;
+            }
+            if (isNaN(fee)) {
+                alert('수수료가 올바르지 않습니다.')
+                return;
+            }
+
+            var form_data = $("#form_buy").serialize();
+            $.ajax({
+                type: "POST",
+                url: "{% url 'accbook:fntrade_buy' %}",
+                data: form_data,
+                dataType: "json",
+                success: function (response) {
+                    if (response.result == "Success") {
+                        $('#popup_buy').modal('hide');
+                        LoadTrades();
+                    }
+                    else { alert(response.result); }
+                },
+                error: function (request, status, error) { alert(error); },
+            });
+        });
+    });
+</script>
+{% endblock %}
+
+{% block contents %}
+<div class="row">
+    <div class="col-auto">
+        <h5>금융상품 거래 내역</h5>
+    </div>
+    <div class="col-auto">
+        (<div id="fntrade_count" class="d-inline">0</div>건)
+    </div>
+</div>
+<div class="row">
+    <div id="div_data" class="overflow-auto" style="height: 1000px;">
+        <table id="fntrade_list" class="table table-bordered table-sm">
+            <thead class="table-light align-middle text-center" style="position: sticky; top: 0; z-index: 1;">
+                <tr>
+                    <th width="30">id</th>
+                    <th width="100">거래일</th>
+                    <th width="120">금융사</th>
+                    <th width="120">계좌명</th>
+                    <th width="200">상품명</th>
+                    <th width="100">매수단가</th>
+                    <th width="80">수량</th>
+                    <th width="100">매수금액</th>
+                    <th width="100">매도일</th>
+                    <th width="100">매도단가</th>
+                    <th width="100">매도금액</th>
+                    <th>비고</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </div>
+</div>
+<div class="row mt-4">
+    <div class="col col-auto">
+        <input type="button" class="form-control btn-primary btn-lg" style="width: 100px;" id="btn_buy_popup"
+            value="매수 등록">
+    </div>
+</div>
+
+<!-- Modal -->
+<div class="modal" id="popup_buy" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <form id="form_buy">
+            {% csrf_token %}
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">금융상품 매수 등록</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col col-6">
+                            <div class="row">
+                                <div class="col col-2">날짜</div>
+                                <div class="col col-10">
+                                    <input type="datetime-local" id="f_date" name="f_date"
+                                        class="form-control form-control-sm">
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col col-2">금융상품</div>
+                                <div class="col col-10">
+                                    <input type="hidden" id="f_prod" name="f_prod" value="">
+                                    <input type="text" id="f_prod_text" class="form-control form-control-sm" readonly>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col col-2">단가</div>
+                                <div class="col col-4">
+                                    <input type="text" id="f_price" name="f_price" class="form-control form-control-sm">
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col col-2">수량</div>
+                                <div class="col col-4">
+                                    <input type="text" id="f_quantity" name="f_quantity" class="form-control form-control-sm">
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col col-2">수수료</div>
+                                <div class="col col-4">
+                                    <input type="text" id="f_fee" name="f_fee" class="form-control form-control-sm">
+                                </div>
+                            </div>
+                            <div class="row mt-4">
+                                <div class="col">
+                                    <button type="button" id="btn_register" class="btn btn-primary btn-lg">등 록</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col col-6">
+                            <select id="fn_prod" class="form-control fn_prod" depth="0" size="10">
+                                {% for item in prod_list %}
+                                <option value="{{item.id}}">{{item.deposit.fn_inst.name}}-{{item.deposit.name}}-{{item.name}}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

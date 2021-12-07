@@ -1,3 +1,4 @@
+from django.http.request import split_domain_port
 from django.shortcuts import redirect, render
 from django.http import HttpResponse, JsonResponse
 from django.contrib.auth.decorators import login_required
@@ -5,10 +6,17 @@ from django.forms.models import model_to_dict
 from django.db.models import Q
 
 import datetime
+import decimal
 from dateutil.relativedelta import relativedelta
 from json import JSONEncoder
 
 from .models import *
+
+
+class MyJsonEncoder(JSONEncoder):
+    def default(self, o):
+        return o.__dict__
+
 
 # =============================================================================
 # 가계부 메인
@@ -99,26 +107,40 @@ def accounts_modify(request):
     request.session['_scroll_y_pos'] = scroll_y_pos
     return redirect('accbook:accounts')
 
+
 # =============================================================================
 # 계좌관리
 
 @login_required(login_url='common:login')
 def deposits(request):
-    deposits_list = Deposit.objects.order_by('order')
+    context = {
+    }
+    return render(request, 'accbook/deposits.html', context)
+
+def deposit_list(request):
+    result = 'Fail'
+    result_list = []
 
     today = datetime.date.today()
     nearest_item = None
-    for item in deposits_list:
-        if item.expiration_date and (nearest_item is None or item.expiration_date - today < nearest_item.expiration_date - today):
+    nearest_view_item = None
+
+    deposit_list = Deposit.objects.order_by('order')
+    for item in deposit_list:
+        view_item = DepositView(item)
+        result_list.append(view_item)
+        if item.end_date is None and item.expiration_date and (nearest_item is None or item.expiration_date - today < nearest_item.expiration_date - today):
             nearest_item = item
+            nearest_view_item = view_item
     
     if nearest_item:
-        nearest_item.is_expiration_coming = True;
+        nearest_view_item.is_expiration_coming = True
 
-    context = {
-        'list': deposits_list,
-    }
-    return render(request, 'accbook/deposits.html', context)
+    result = 'Success'
+
+    print(f'accbook:deposit_list : ({result}) ({len(result_list)})')
+    context = { 'result': result, 'list': result_list }
+    return JsonResponse(context, encoder=MyJsonEncoder)
 
 
 # =============================================================================
@@ -141,6 +163,173 @@ def credit_card(request):
         'list': card_list,
     }
     return render(request, 'accbook/creditcard.html', context)
+
+
+
+# =============================================================================
+# 금융상품 목록
+
+@login_required(login_url='common:login')
+def fn_prod(request):
+    prod_list = FnProd.objects.order_by('order')
+    context = {
+        'list': prod_list,
+    }
+    return render(request, 'accbook/fn_prod.html', context)
+
+
+
+# =============================================================================
+# 금융상품 거래 내역
+
+@login_required(login_url='common:login')
+def fn_trade(request):
+    prod_list = FnProd.objects.order_by('order')
+
+    context = {
+        'prod_list': prod_list,
+    }
+    return render(request, 'accbook/fn_trade.html', context)
+
+
+# =============================================================================
+# 금융상품 거래 내역을 json으로 리턴
+
+class MyJsonEncoderFnTrade(JSONEncoder):
+    def default(self, o):
+        if isinstance(o, FnTrade):
+            KST = datetime.timezone(datetime.timedelta(hours=9))
+            json_object = {
+            'id': o.id,
+            'fn_inst': o.fn_prod.deposit.fn_inst.name,
+            'fn_deposit': o.fn_prod.deposit.name,
+            'fn_prod': o.fn_prod.name,
+            'buy_date': '' if o.buy_date is None else o.buy_date.astimezone(KST).strftime('%m-%d'),
+            'buy_price': float(o.buy_price),
+            'quantity': float(o.quantity),
+            'sell_date': '' if o.sell_date is None else o.sell_date.astimezone(KST).strftime('%m-%d'),
+            'sell_price': float(o.sell_price),
+            }
+            return json_object
+        return None
+
+def fntrade_list(request):
+    result = 'Fail'
+    result_list = []
+    # local time, ISO Date format : YYYY-MM-DD
+    begin_date = request.POST.get('begin_date')
+    end_date = request.POST.get('end_date')
+
+    KST = datetime.timezone(datetime.timedelta(hours=9))
+    try:
+        date_end = datetime.datetime.fromisoformat(end_date[0:4],end_date[5:7],end_date[8:10],tzinfo=KST)
+    except:
+        date_end = datetime.datetime.now(tz=KST)
+    date_end = date_end + relativedelta(days=1)
+    try:
+        date_begin = datetime.datetime.fromisoformat(begin_date[0:4],begin_date[5:7],begin_date[8:10],tzinfo=KST)
+    except:
+        date_begin = date_end - relativedelta(months=1)
+
+    fntrade_list = FnTrade.objects.filter(buy_date__gte=date_begin, buy_date__lt=date_end).order_by('buy_date')
+    for item in fntrade_list:
+        result_list.append(item)
+    result = 'Success'
+
+    print(f'accbook:fntrade_list : ({result}) ({len(result_list)})')
+    context = { 'result': result, 'list': result_list }
+    return JsonResponse(context, encoder=MyJsonEncoderFnTrade)
+
+
+# =============================================================================
+# 금융상품 거내 내역 등록
+
+@login_required(login_url='common:login')
+def fntrade_buy(request):
+    result = 'Fail'
+
+    is_register_valid = True
+    f_date = request.POST.get('f_date') # 2021-11-11T13:25 str type
+    if f_date:
+        f_date += ' +0900'
+    f_prod = request.POST.get('f_prod')
+    f_price = request.POST.get('f_price')
+    f_quantity = request.POST.get('f_quantity')
+    f_fee = request.POST.get('f_fee')
+
+    fntrade = FnTrade()
+    fntrade.fn_prod = FnProd.objects.get(id=f_prod)
+
+    try:
+        if fntrade.fn_prod.is_domestic:
+            price = int(f_price)
+            fee = int(f_fee)
+            price_k = price
+            fee_k = fee
+        else:
+            price = float(f_price)
+            fee = float(f_fee)
+            price_k = int(price * 1000)
+            fee_k = int(fee * 1000)
+        quantity = int(f_quantity)
+    except:
+        is_register_valid = False
+        print(f'price, quantity, fee invalid [{f_price} {f_quantity} {f_fee}]')
+
+    try:
+        buy_date = datetime.datetime.strptime(f_date, '%Y-%m-%dT%H:%M %z')
+    except:
+        is_register_valid = False
+        print(f'date invalid [{f_date}]')
+
+    if is_register_valid:
+        # 거래 내역 저장
+        fntrade.buy_date = buy_date
+        fntrade.buy_price = price
+        fntrade.quantity = quantity
+        fntrade.save()
+
+        # 전표 저장
+        slip = Slip()
+        slip.date = buy_date
+        slip.desc = f'{fntrade.fn_prod.name} 매수'
+        slip.target = fntrade.fn_prod.deposit.fn_inst.name
+        slip.is_temporary = False
+        slip.save()
+
+        sum_amount = 0
+
+        slip_data = SlipData()
+        slip_data.parent = slip
+        slip_data.date = slip.date
+        slip_data.account = fntrade.fn_prod.account
+        slip_data.amount = price_k * fntrade.quantity
+        slip_data.is_debit = True
+        slip_data.save()
+        sum_amount += slip_data.amount
+
+        slip_data = SlipData()
+        slip_data.parent = slip
+        slip_data.date = slip.date
+        slip_data.account = Accounts.objects.get(id=56)
+        slip_data.amount = fee_k
+        slip_data.is_debit = True
+        slip_data.save()
+        sum_amount += slip_data.amount
+
+        slip_data = SlipData()
+        slip_data.parent = slip
+        slip_data.date = slip.date
+        slip_data.account = Accounts.objects.get(deposit=fntrade.fn_prod.deposit)
+        slip_data.amount = sum_amount
+        slip_data.is_debit = False
+        slip_data.save()
+
+        result = 'Success'
+
+    print(f'accbook:fntrade_buy : ({result})')
+    context = { 'result': result }
+    return JsonResponse(context)
 
 
 # =============================================================================
@@ -248,9 +437,11 @@ def slip_register(request):
 class MyJsonEncoderSlip(JSONEncoder):
     def default(self, o):
         if isinstance(o, datetime.date):
-            return o.strftime('%m-%d %H:%M')
+            KST = datetime.timezone(datetime.timedelta(hours=9))
+            return o.astimezone(KST).strftime('%m-%d %H:%M')
         if isinstance(o, datetime.datetime):
-            return o.strftime('%m-%d %H:%M')
+            KST = datetime.timezone(datetime.timedelta(hours=9))
+            return o.astimezone(KST).strftime('%m-%d %H:%M')
         return o.__dict__
 
 def slip_list(request):
@@ -458,3 +649,28 @@ def annual(request):
         'data_list': data_list,
     }
     return render(request, 'accbook/annual.html', context)
+
+
+# =============================================================================
+# 보기 순서 증가
+
+@login_required(login_url='common:login')
+def increase_order(request):
+    result = 'Fail'
+    list = []
+
+    target = request.POST.get('target')
+    begin_order = int(request.POST.get('begin_order'))
+
+    if target == 'Deposit':
+        list = Deposit.objects.filter(order__gte=begin_order)
+
+    for item in list:
+        item.order = item.order + 1
+        item.save()
+
+    result = 'Success'
+
+    context = { 'result': result }
+    return JsonResponse(context)
+

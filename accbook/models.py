@@ -82,6 +82,26 @@ class Deposit(models.Model):
     def __str__(self) -> str:
         return str(self.name)
 
+class DepositView:
+    def __init__(self, obj):
+        self.id = obj.id
+        self.fn_inst = obj.fn_inst.name
+        self.name = obj.name
+        self.number = obj.number
+        self.type = obj.type_str
+        self.is_protected = '예' if obj.is_protected else '아니오'
+        self.state = obj.state
+        self.interest_rate = obj.interest_rate
+        self.begin_date = '' if obj.begin_date is None else obj.begin_date.strftime('%Y-%m-%d')
+        self.end_date = '' if obj.end_date is None else obj.end_date.strftime('%Y-%m-%d')
+        self.expiration_date = '' if obj.expiration_date is None else obj.expiration_date.strftime('%Y-%m-%d')
+        self.description = obj.description
+        self.order = obj.order
+        self.is_expiration_coming = obj.is_expiration_coming
+
+    def __str__(self) -> str:
+        return str(f'{self.fn_inst} {self.name}')
+
 
 # =============================================================================
 # 카드
@@ -159,7 +179,63 @@ class Accounts(models.Model):
 
 
 # =============================================================================
+# 금융상품
+
+FnProd_Types = {
+    1: '예적금',
+    2: '주식',
+    3: 'ETF',
+    4: '해외ETF',
+    5: '펀드',
+    6: '금현물',
+    7: '채권',
+    8: '가상화폐',
+    9: '리츠',
+    999: '없음',
+}
+
+class FnProd(models.Model):
+    deposit = models.ForeignKey(Deposit, on_delete=models.CASCADE)
+    name = models.CharField(max_length=32, default='')
+    code = models.CharField(max_length=32, default='')
+    # 국내 or 해외 여부
+    is_domestic = models.BooleanField(default=False)
+    type = models.IntegerField(default=999)
+    # 설명
+    description = models.CharField(max_length=1024, default='')
+    order = models.IntegerField(default=999)
+    # 현재가격
+    price = models.DecimalField(max_digits=15, decimal_places=4, default=0)
+    # 연결된 계정과목
+    account = models.ForeignKey(Accounts, on_delete=models.CASCADE)
+
+    @property
+    def type_str(self):
+        return FnProd_Types[self.type]
+
+    def __str__(self) -> str:
+        return str(self.name)
+
+
+
+# =============================================================================
+# 금융상품 거래 내역
+
+class FnTrade(models.Model):
+    fn_prod = models.ForeignKey(FnProd, on_delete=models.CASCADE)
+    buy_date = models.DateTimeField()
+    buy_price = models.DecimalField(max_digits=15, decimal_places=4, default=0)
+    quantity = models.DecimalField(max_digits=12, decimal_places=4, default=0)
+    sell_date = models.DateTimeField(null=True)
+    sell_price = models.DecimalField(max_digits=15, decimal_places=4, default=0)
+
+    def __str__(self) -> str:
+        return str(f'{self.date} {self.fn_prod.name}')
+
+
+# =============================================================================
 # 전표
+
 class Slip(models.Model):
     date = models.DateTimeField()
     target = models.CharField(max_length=32, default='')
@@ -173,6 +249,7 @@ class Slip(models.Model):
 
 # =============================================================================
 # 전표항목
+
 class SlipData(models.Model):
     parent = models.ForeignKey(Slip, on_delete=models.CASCADE)
     account = models.ForeignKey(Accounts, on_delete=models.CASCADE)

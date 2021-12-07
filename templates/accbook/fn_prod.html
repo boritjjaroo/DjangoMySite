@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+{% load common_filter %}
+{% load humanize %}
+
+{% block style %}
+<style>
+    th {
+        background-color: lightslategrey;
+        text-align: center;
+    }
+</style>
+{% endblock %}
+
+{% block javascript %}
+<script type="text/javascript">
+    $(function () {
+    });
+</script>
+{% endblock %}
+
+{% block contents %}
+<h5>금융상품 목록</h5>
+<div class="tableFixHead" style="padding-bottom: 30px;">
+    <table class="list">
+        <thead>
+            <tr>
+                <th width="30">id</th>
+                <th width="30">순서</th>
+                <th width="120">금융기관</th>
+                <th width="100">거래계좌</th>
+                <th width="60">국내/해외</th>
+                <th width="50">종류</th>
+                <th width="250">상품명</th>
+                <th width="120">코드명</th>
+                <th width="100">현재가</th>
+                <th width="100">설명</th>
+                <th>비고</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in list %}
+            <tr>
+                <td style="text-align: center;">{{item.id}}</td>
+                <td style="text-align: center;">{{item.order}}</td>
+                <td>{{item.deposit.fn_inst.name}}</td>
+                <td>{{item.deposit.name}}</td>
+                <td style="text-align: center;">{{item.is_domestic|yesno:"국내,해외,"}}</td>
+                <td style="text-align: center;">{{item.type_str}}</td>
+                <td>{{item.name}}</td>
+                <td>{{item.code}}</td>
+                <td style="text-align: right;">{{item.price|intcomma}}</td>
+                <td>{{item.description}}</td>
+                <td></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

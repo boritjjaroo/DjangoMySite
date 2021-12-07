@@ -35,7 +35,12 @@ function inputNumberComma(obj) {
 
 function comma(str) {
     str = String(str);
-    return str.replace(/(\d)(?=(?:\d{3})+(?!\d))/g, '$1,');
+    parts = str.split('.');
+    part0 = parts[0].replace(/(\d)(?=(?:\d{3})+(?!\d))/g, '$1,');
+    result = part0;
+    if (parts[1])
+        result += '.' + parts[1];
+    return result;
 }
 
 function uncomma(str) {
