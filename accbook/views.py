@@ -257,11 +257,10 @@ def fntrade_buy(request):
     f_quantity = request.POST.get('f_quantity')
     f_fee = request.POST.get('f_fee')
 
-    fntrade = FnTrade()
-    fntrade.fn_prod = FnProd.objects.get(id=f_prod)
+    fn_prod = FnProd.objects.get(id=f_prod)
 
     try:
-        if fntrade.fn_prod.is_domestic:
+        if fn_prod.is_domestic:
             price = int(f_price)
             fee = int(f_fee)
             price_k = price
@@ -284,46 +283,44 @@ def fntrade_buy(request):
 
     if is_register_valid:
         # 거래 내역 저장
-        fntrade.buy_date = buy_date
-        fntrade.buy_price = price
-        fntrade.quantity = quantity
-        fntrade.save()
+        FnTrade.objects.create(
+            fn_prod=fn_prod,
+            buy_date=buy_date,
+            buy_price=price,
+            quantity=quantity
+        )
 
         # 전표 저장
-        slip = Slip()
-        slip.date = buy_date
-        slip.desc = f'{fntrade.fn_prod.name} 매수'
-        slip.target = fntrade.fn_prod.deposit.fn_inst.name
-        slip.is_temporary = False
-        slip.save()
+        slip = Slip.objects.create(
+            date=buy_date,
+            desc=f'{fn_prod.name} 매수',
+            target=fn_prod.deposit.fn_inst.name,
+            is_temporary=False
+        )
 
-        sum_amount = 0
+        SlipData.objects.create(
+            parent=slip,
+            date=slip.date,
+            account=fn_prod.account,
+            amount=price_k * quantity,
+            is_debit=True
+        )
 
-        slip_data = SlipData()
-        slip_data.parent = slip
-        slip_data.date = slip.date
-        slip_data.account = fntrade.fn_prod.account
-        slip_data.amount = price_k * fntrade.quantity
-        slip_data.is_debit = True
-        slip_data.save()
-        sum_amount += slip_data.amount
+        SlipData.objects.create(
+            parent=slip,
+            date=slip.date,
+            account=Accounts.objects.get(id=56), # 금융거래 수수료 계정
+            amount=fee_k,
+            is_debit=True
+        )
 
-        slip_data = SlipData()
-        slip_data.parent = slip
-        slip_data.date = slip.date
-        slip_data.account = Accounts.objects.get(id=56)
-        slip_data.amount = fee_k
-        slip_data.is_debit = True
-        slip_data.save()
-        sum_amount += slip_data.amount
-
-        slip_data = SlipData()
-        slip_data.parent = slip
-        slip_data.date = slip.date
-        slip_data.account = Accounts.objects.get(deposit=fntrade.fn_prod.deposit)
-        slip_data.amount = sum_amount
-        slip_data.is_debit = False
-        slip_data.save()
+        SlipData.objects.create(
+            parent=slip,
+            date=slip.date,
+            account=Accounts.objects.get(deposit=fn_prod.deposit),
+            amount=price_k * quantity + fee_k,
+            is_debit=False
+        )
 
         result = 'Success'
 
