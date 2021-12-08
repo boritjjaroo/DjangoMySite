@@ -4,13 +4,6 @@
 
 {% block style %}
 <style>
-    th {
-        background-color: lightslategrey;
-        text-align: center;
-    }
-    tr.state_sold {
-        background-color: grey;
-    }
 </style>
 {% endblock %}
 
@@ -19,56 +12,46 @@
     // local time, ISO Date format : YYYY-MM-DD
     var begin_date = "{{begin_date}}";
     var end_date = "{{end_date}}";
+    var col_head_infos = [
+        {'name': 'id', 'width': '30'},
+        {'name': '거래일', 'width': '60'},
+        {'name': '금융사', 'width': '120'},
+        {'name': '계좌명', 'width': '120'},
+        {'name': '상품명', 'width': '200'},
+        {'name': '매수단가', 'width': '100'},
+        {'name': '수량', 'width': '80'},
+        {'name': '매수금액', 'width': '100'},
+        {'name': '비고'},
+    ];
 
-    function LoadTrades(scrollBotton) {
-        $.ajax({
-            type: "POST",
-            url: "{% url 'accbook:fntrade_list' %}",
-            data: { 'begin_date': begin_date, 'end_date': end_date },
-            dataType: "json",
-            success: function (response) {
-                if (response.result == "Success") {
-                    scroll_y_pos = $('#div_data').scrollTop();
-                    $('#fntrade_list tbody').empty();
-                    $('#fntrade_count').text(response.list.length);
-                    $.each(response.list, function (index, item) {
+    var col_infos = [
+        {'name': 'id', 'align': 'center'},
+        {'name': 'buy_date', 'align': 'center'},
+        {'name': 'fn_inst'},
+        {'name': 'fn_deposit'},
+        {'name': 'fn_prod'},
+        {'name': 'buy_price', 'format_number': { minimumFractionDigits: 4 }, 'align': 'right'},
+        {'name': 'quantity', 'format_number': {}, 'align': 'right'},
+        {'name': 'amount', 'format_number': { minimumFractionDigits: 4 }, 'align': 'right'},
+        {},
+    ];
 
-                        var tr = $('<tr></tr>');
-                        if (item.sell_date) {
-                            tr.attr("class", "state_sold");
-                        }
-                        tr.append($(`<td style="text-align: center;">${item.id}</td>`));
-                        tr.append($(`<td style="text-align: center;">${item.buy_date}</td>`));
-                        tr.append($(`<td>${item.fn_inst}</td>`));
-                        tr.append($(`<td>${item.fn_deposit}</td>`));
-                        tr.append($(`<td>${item.fn_prod}</td>`));
-                        tr.append($(`<td style="text-align: right;">${comma(item.buy_price)}</td>`));
-                        tr.append($(`<td style="text-align: right;">${comma(item.quantity)}</td>`));
-                        tr.append($(`<td style="text-align: right;">${comma(item.buy_price*item.quantity)}</td>`));
-                        if (item.sell_date) {
-                            tr.append($(`<td style="text-align: center;">${item.sell_date}</td>`));
-                            tr.append($(`<td style="text-align: right;">${comma(item.sell_price)}</td>`));
-                            tr.append($(`<td style="text-align: right;">${comma(item.sell_price*item.quantity)}</td>`));
-                        }
-                        else {
-                            tr.append($(`<td></td>`));
-                            tr.append($(`<td></td>`));
-                            tr.append($(`<td></td>`));
-                        }
-                        tr.append($(`<td></td>`));
+    function DataTable_GetJsonDataFunc(data) {
+        $('#datatable_count').text(data.length);
+        DataTable_SetData('table_data', col_infos, data);
+    }
 
-                        $('#fntrade_list tbody').append(tr);
-                    });
+    function LoadDataTable(scrollBottom) {
+        scroll_y_pos = $('#div_data').scrollTop();
 
-                    if (scrollBotton)
-                        $('#div_data').scrollTop(10000);
-                    else
-                        $('#div_data').scrollTop(scroll_y_pos);
-                }
-                else { alert(response.result); }
-            },
-            error: function (request, status, error) { alert(error); },
-        });
+        var url = "{% url 'accbook:fntrade_list' %}";
+        var data = {'begin_date': begin_date, 'end_date': end_date};
+        DataTable_GetJsonData(url, data, DataTable_GetJsonDataFunc);
+
+        if (scrollBottom)
+            $('#div_data').scrollTop(10000);
+        else
+            $('#div_data').scrollTop(scroll_y_pos);
     }
 
     $(function () {
@@ -77,7 +60,8 @@
         var now_str = date_local.toISOString();
         $('#f_date').val(now_str.substr(0, 16));
 
-        LoadTrades(true);
+        DataTable_MakeTHead('table_data', col_head_infos);
+        LoadDataTable(true);
 
         $('#btn_buy_popup').click(function () {
             $('#popup_buy').modal('show');
@@ -126,7 +110,7 @@
                 success: function (response) {
                     if (response.result == "Success") {
                         $('#popup_buy').modal('hide');
-                        LoadTrades();
+                        LoadDataTable();
                     }
                     else { alert(response.result); }
                 },
@@ -143,27 +127,13 @@
         <h5>금융상품 거래 내역</h5>
     </div>
     <div class="col-auto">
-        (<div id="fntrade_count" class="d-inline">0</div>건)
+        (<div id="datatable_count" class="d-inline">0</div>건)
     </div>
 </div>
 <div class="row">
     <div id="div_data" class="overflow-auto" style="height: 1000px;">
-        <table id="fntrade_list" class="table table-bordered table-sm">
+        <table id="table_data" class="table table-bordered table-sm">
             <thead class="table-light align-middle text-center" style="position: sticky; top: 0; z-index: 1;">
-                <tr>
-                    <th width="30">id</th>
-                    <th width="100">거래일</th>
-                    <th width="120">금융사</th>
-                    <th width="120">계좌명</th>
-                    <th width="200">상품명</th>
-                    <th width="100">매수단가</th>
-                    <th width="80">수량</th>
-                    <th width="100">매수금액</th>
-                    <th width="100">매도일</th>
-                    <th width="100">매도단가</th>
-                    <th width="100">매도금액</th>
-                    <th>비고</th>
-                </tr>
             </thead>
             <tbody>
             </tbody>

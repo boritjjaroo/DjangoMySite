@@ -226,12 +226,21 @@ class FnTrade(models.Model):
     buy_date = models.DateTimeField()
     buy_price = models.DecimalField(max_digits=15, decimal_places=4, default=0)
     quantity = models.DecimalField(max_digits=12, decimal_places=4, default=0)
+
+    def __str__(self) -> str:
+        return str(f'{self.buy_date} {self.fn_prod.name}')
+
+
+class FnTradeSold(models.Model):
+    fn_prod = models.ForeignKey(FnProd, on_delete=models.CASCADE)
+    buy_date = models.DateTimeField()
+    buy_price = models.DecimalField(max_digits=15, decimal_places=4, default=0)
+    quantity = models.DecimalField(max_digits=12, decimal_places=4, default=0)
     sell_date = models.DateTimeField(null=True)
     sell_price = models.DecimalField(max_digits=15, decimal_places=4, default=0)
 
     def __str__(self) -> str:
-        return str(f'{self.date} {self.fn_prod.name}')
-
+        return str(f'{self.buy_date} {self.fn_prod.name}')
 
 # =============================================================================
 # 전표

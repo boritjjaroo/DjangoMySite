@@ -207,8 +207,7 @@ class MyJsonEncoderFnTrade(JSONEncoder):
             'buy_date': '' if o.buy_date is None else o.buy_date.astimezone(KST).strftime('%m-%d'),
             'buy_price': float(o.buy_price),
             'quantity': float(o.quantity),
-            'sell_date': '' if o.sell_date is None else o.sell_date.astimezone(KST).strftime('%m-%d'),
-            'sell_price': float(o.sell_price),
+            'amount': float(o.buy_price) * float(o.quantity),
             }
             return json_object
         return None
@@ -237,7 +236,7 @@ def fntrade_list(request):
     result = 'Success'
 
     print(f'accbook:fntrade_list : ({result}) ({len(result_list)})')
-    context = { 'result': result, 'list': result_list }
+    context = { 'result': result, 'data': result_list }
     return JsonResponse(context, encoder=MyJsonEncoderFnTrade)
 
 
