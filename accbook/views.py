@@ -3,7 +3,7 @@ from django.shortcuts import redirect, render
 from django.http import HttpResponse, JsonResponse
 from django.contrib.auth.decorators import login_required
 from django.forms.models import model_to_dict
-from django.db.models import Q
+from django.db.models import Q, F, Sum
 
 import datetime
 import decimal
@@ -171,12 +171,85 @@ def credit_card(request):
 
 @login_required(login_url='common:login')
 def fn_prod(request):
-    prod_list = FnProd.objects.order_by('order')
     context = {
-        'list': prod_list,
     }
     return render(request, 'accbook/fn_prod.html', context)
 
+
+
+# =============================================================================
+# 금융상품 목록을 json으로 리턴
+
+class MyJsonEncoderFnProd(JSONEncoder):
+    def default(self, o):
+        if isinstance(o, FnProd):
+            json_object = {
+            'id': o.id,
+            'order': o.order,
+            'fn_inst': o.deposit.fn_inst.name,
+            'fn_deposit': o.deposit.name,
+            'is_domestic': '국내' if o.is_domestic else '해외',
+            'type': o.type_str,
+            'name': o.name,
+            'code': o.code,
+            'price': float(o.price),
+            'price_krw': o.price_krw,
+            'buy_price': o.buy_price,
+            'buy_price_krw': o.buy_price_krw,
+            'quantity': o.quantity,
+            'buy_amount': o.buy_amount,
+            'buy_amount_krw': o.buy_amount_krw,
+            'eval_amount': o.eval_amount,
+            'eval_amount_krw': o.eval_amount_krw,
+            'profit_loss': o.profit_loss,
+            'description': o.description,
+            }
+            return json_object
+        return None
+
+def fnprod_list(request):
+    result = 'Fail'
+    result_list = []
+
+    rate_usd = AccBookSettings.getRateUSD()
+    fnprod_list = FnProd.objects.order_by('order')
+    for item in fnprod_list:
+        trades = FnTrade.objects.filter(fn_prod=item) \
+                    .aggregate( \
+                        sum_quantity=Sum('quantity', output_field=models.FloatField()), \
+                        sum_amount=Sum(F('buy_price')*F('quantity'), output_field=models.FloatField()) \
+                    )
+
+        if trades['sum_amount']:
+            item.buy_price = trades['sum_amount'] / trades['sum_quantity']
+            item.quantity = trades['sum_quantity']
+            item.buy_amount = trades['sum_amount']
+            item.eval_amount = float(item.price) * item.quantity
+        else:
+            item.buy_price = 0.0
+            item.quantity = 0.0
+            item.buy_amount = 0.0
+            item.eval_amount = 0.0
+
+        if item.is_domestic:
+            item.price_krw = float(item.price)
+            item.buy_price_krw = item.buy_price
+            item.buy_amount_krw = item.buy_amount
+            item.eval_amount_krw = item.eval_amount
+        else:
+            item.price_krw = float(item.price) * rate_usd
+            item.buy_price_krw = item.buy_price * rate_usd
+            item.buy_amount_krw = item.buy_amount * rate_usd
+            item.eval_amount_krw = item.eval_amount * rate_usd
+
+        item.profit_loss = item.eval_amount_krw - item.buy_amount_krw
+        result_list.append(item)
+
+    result = 'Success'
+
+    print(f'accbook:fnprod_list : ({result}) ({len(result_list)})')
+    context = { 'result': result, 'data': result_list }
+    return JsonResponse(context, encoder=MyJsonEncoderFnProd)
 
 
 # =============================================================================

@@ -13,47 +13,88 @@
 
 {% block javascript %}
 <script type="text/javascript">
+    var col_head_infos = [
+        {'name': 'id', 'width': '30'},
+        {'name': '순서', 'width': '30'},
+        {'name': '금융기관', 'width': '100'},
+        {'name': '거래계좌', 'width': '100'},
+        {'name': '국내/해외', 'width': '40'},
+        {'name': '종류', 'width': '60'},
+        {'name': '상품명', 'width': '200'},
+        //{'name': '코드명', 'width': '100'},
+        {'name': '현재가', 'width': '80'},
+        {'name': '현재가(원화)', 'width': '80'},
+        {'name': '평균단가', 'width': '80'},
+        {'name': '평균단가(원화)', 'width': '80'},
+        {'name': '수량', 'width': '40'},
+        {'name': '매수금액', 'width': '80'},
+        {'name': '매수금액(원화)', 'width': '80'},
+        {'name': '평가금액', 'width': '80'},
+        {'name': '평가금액(원화)', 'width': '80'},
+        {'name': '손익', 'width': '80'},
+        //{'name': '설명', 'width': '100'},
+        {'name': '비고'},
+    ];
+
+    var col_infos = [
+        {'name': 'id', 'align': 'center'},
+        {'name': 'order', 'align': 'center'},
+        {'name': 'fn_inst'},
+        {'name': 'fn_deposit'},
+        {'name': 'is_domestic', 'align': 'center'},
+        {'name': 'type', 'align': 'center'},
+        {'name': 'name'},
+        //{'name': 'code'},
+        {'name': 'price', 'format_number': { minimumFractionDigits: 4 }, 'align': 'right'},
+        {'name': 'price_krw', 'format_number': { minimumFractionDigits: 1, maximumFractionDigits: 1 }, 'align': 'right'},
+        {'name': 'buy_price', 'format_number': { minimumFractionDigits: 4 }, 'align': 'right'},
+        {'name': 'buy_price_krw', 'format_number': { minimumFractionDigits: 1, maximumFractionDigits: 1 }, 'align': 'right'},
+        {'name': 'quantity', 'format_number': { minimumFractionDigits: 2 }, 'align': 'right'},
+        {'name': 'buy_amount', 'format_number': { minimumFractionDigits: 4 }, 'align': 'right'},
+        {'name': 'buy_amount_krw', 'format_number': { minimumFractionDigits: 1, maximumFractionDigits: 1 }, 'align': 'right'},
+        {'name': 'eval_amount', 'format_number': { minimumFractionDigits: 4 }, 'align': 'right'},
+        {'name': 'eval_amount_krw', 'format_number': { minimumFractionDigits: 1, maximumFractionDigits: 1 }, 'align': 'right'},
+        {'name': 'profit_loss', 'format_number': { minimumFractionDigits: 1, maximumFractionDigits: 1 }, 'align': 'right', 'minus': 'danger'},
+        //{'name': 'description'},
+        {},
+    ];
+                
+    function DataTable_GetJsonDataFunc(data) {
+        DataTable_SetData('table_data', col_infos, data);
+    }
+
+    function LoadDataTable(scrollBottom) {
+        scroll_y_pos = $('#div_data').scrollTop();
+
+        var url = "{% url 'accbook:fnprod_list' %}";
+        var data = {};
+        DataTable_GetJsonData(url, data, DataTable_GetJsonDataFunc);
+
+        if (scrollBottom)
+            $('#div_data').scrollTop(10000);
+        else
+            $('#div_data').scrollTop(scroll_y_pos);
+    }
+
     $(function () {
+        DataTable_MakeTHead('table_data', col_head_infos);
+        LoadDataTable();
     });
 </script>
 {% endblock %}
 
 {% block contents %}
-<h5>금융상품 목록</h5>
-<div class="tableFixHead" style="padding-bottom: 30px;">
-    <table class="list">
-        <thead>
-            <tr>
-                <th width="30">id</th>
-                <th width="30">순서</th>
-                <th width="120">금융기관</th>
-                <th width="100">거래계좌</th>
-                <th width="60">국내/해외</th>
-                <th width="50">종류</th>
-                <th width="250">상품명</th>
-                <th width="120">코드명</th>
-                <th width="100">현재가</th>
-                <th width="100">설명</th>
-                <th>비고</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for item in list %}
-            <tr>
-                <td style="text-align: center;">{{item.id}}</td>
-                <td style="text-align: center;">{{item.order}}</td>
-                <td>{{item.deposit.fn_inst.name}}</td>
-                <td>{{item.deposit.name}}</td>
-                <td style="text-align: center;">{{item.is_domestic|yesno:"국내,해외,"}}</td>
-                <td style="text-align: center;">{{item.type_str}}</td>
-                <td>{{item.name}}</td>
-                <td>{{item.code}}</td>
-                <td style="text-align: right;">{{item.price|intcomma}}</td>
-                <td>{{item.description}}</td>
-                <td></td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+<div class="row">
+    <h5>금융상품 목록</h5>
+</div>
+<div class="row">
+    <div id="div_data" class="overflow-auto">
+        <table id="table_data" class="table table-bordered table-sm" style="font-size: 0.8rem;">
+            <thead class="table-light align-middle text-center" style="position: sticky; top: 0; z-index: 1;">
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </div>
 </div>
 {% endblock %}

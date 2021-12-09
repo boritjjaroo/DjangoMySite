@@ -85,9 +85,14 @@ function DataTable_SetData(table_id, col_infos, data_list) {
         var tr = document.createElement("tr");
         for (var col_info of col_infos) {
             var td = document.createElement("td");
+            var class_val = '';
+            var is_minus = false;
+
             if ('name' in col_info) {
                 var val = item[col_info['name']];
                 if ('format_number' in col_info) {
+                    if (val < 0)
+                        is_minus = true
                     options = col_info['format_number']
                     val = new Intl.NumberFormat('ko-KR', options).format(val);
                 }
@@ -96,12 +101,18 @@ function DataTable_SetData(table_id, col_infos, data_list) {
             }
             if ('align' in col_info) {
                 if (col_info['align'] == 'left')
-                    td.setAttribute("class", "text-start")
+                    class_val = class_val + " text-start";
                 else if (col_info['align'] == 'center')
-                    td.setAttribute("class", "text-center")
+                    class_val = class_val + " text-center";
                 else if (col_info['align'] == 'right')
-                    td.setAttribute("class", "text-end")
+                    class_val = class_val + " text-end";
             }
+            if ('minus' in col_info && is_minus) {
+                class_val = class_val + " text-" + col_info['minus'];
+            }
+
+            if (0 < class_val.length)
+                td.setAttribute("class", class_val)
             tr.append(td);
         }
         tbody.append(tr);

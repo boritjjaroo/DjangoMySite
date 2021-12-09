@@ -1,5 +1,26 @@
 from django.db import models
 
+# =============================================================================
+# 각종 설정값
+
+class AccBookSettings(models.Model):
+    rate_usd = models.DecimalField(max_digits=10, decimal_places=4, default=1000)
+    rate_usd_default = models.DecimalField(max_digits=10, decimal_places=4, default=1000)
+
+    @staticmethod
+    def getRateUSD():
+        settings = AccBookSettings.objects.get(id=1)
+        return float(settings.rate_usd)
+
+    @staticmethod
+    def getRateUSDDefault():
+        settings = AccBookSettings.objects.get(id=1)
+        return float(settings.rate_usd_default)
+
+
+# =============================================================================
+# 금융기관
+
 FnInst_Types = {
     1: '1금융권',
     2: '2금융권',
@@ -7,36 +28,6 @@ FnInst_Types = {
     4: '카드사',
     999: '기타',
 }
-
-Deposit_Types = {
-    1: '수시입출금',
-    2: '정기예금',
-    3: '정기적금',
-    4: 'ISA',
-    5: '연금저축',
-    999: '기타',
-}
-
-Card_Types = {
-    1: '체크',
-    2: '신용',
-    3: '선불',
-    4: '더미',
-    999: '기타',
-}
-
-IntnCard_Types = {
-    1: 'Visa',
-    2: 'Master',
-    3: 'UnionPay',
-    4: 'JCB',
-    5: 'BC',
-    999: '없음',
-}
-
-# =============================================================================
-# 금융기관
-
 
 class FnInst(models.Model):
     name = models.CharField(max_length=32, default='')
@@ -53,6 +44,16 @@ class FnInst(models.Model):
 
 # =============================================================================
 # 계좌
+
+Deposit_Types = {
+    1: '수시입출금',
+    2: '정기예금',
+    3: '정기적금',
+    4: 'ISA',
+    5: '연금저축',
+    999: '기타',
+}
+
 class Deposit(models.Model):
     fn_inst = models.ForeignKey(FnInst, on_delete=models.CASCADE)
     name = models.CharField(max_length=32, default='')
@@ -105,6 +106,24 @@ class DepositView:
 
 # =============================================================================
 # 카드
+
+Card_Types = {
+    1: '체크',
+    2: '신용',
+    3: '선불',
+    4: '더미',
+    999: '기타',
+}
+
+IntnCard_Types = {
+    1: 'Visa',
+    2: 'Master',
+    3: 'UnionPay',
+    4: 'JCB',
+    5: 'BC',
+    999: '없음',
+}
+
 class CreditCard(models.Model):
     fn_inst = models.ForeignKey(FnInst, on_delete=models.CASCADE)
     name = models.CharField(max_length=32, default='')
@@ -213,6 +232,18 @@ class FnProd(models.Model):
     def type_str(self):
         return FnProd_Types[self.type]
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.price_krw = 0.0
+        self.buy_price = 0.0
+        self.buy_price_krw = 0.0
+        self.quantity = 0.0
+        self.buy_amount = 0.0
+        self.buy_amount_krw = 0.0
+        self.eval_amount = 0.0
+        self.eval_amount_krw = 0.0
+        self.profit_loss = 0.0
+
     def __str__(self) -> str:
         return str(self.name)
 
@@ -226,6 +257,10 @@ class FnTrade(models.Model):
     buy_date = models.DateTimeField()
     buy_price = models.DecimalField(max_digits=15, decimal_places=4, default=0)
     quantity = models.DecimalField(max_digits=12, decimal_places=4, default=0)
+
+    @property
+    def buy_amount(self):
+        return self.buy_price * self.quantity
 
     def __str__(self) -> str:
         return str(f'{self.buy_date} {self.fn_prod.name}')
