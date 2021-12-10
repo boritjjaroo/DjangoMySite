@@ -49,73 +49,79 @@ function uncomma(str) {
 }
 
 
-function DataTable_MakeTHead(table_id, head_infos) {
-    var table = document.getElementById(table_id);
-    var elements = table.getElementsByTagName('thead');
-    if (elements.length != 1) {
-        alert('<thead> not exist.');
-        return;
-    }
-    var thead = elements[0];
-    var tr = document.createElement('tr');
-    for (var head_info of head_infos) {
-        var th = document.createElement('th');
-        if ('name' in head_info) {
-            var text = document.createTextNode(head_info['name']);
-            th.append(text);
+function DataTable_MakeTHead(table_infos) {
+    for (var table_info of table_infos) {
+        var table = document.getElementById(table_info['id']);
+        var elements = table.getElementsByTagName('thead');
+        if (elements.length != 1) {
+            alert('<thead> not exist.');
+            return;
         }
-        if ('width' in head_info) {
-            th.setAttribute('width', head_info['width'])
+        var thead = elements[0];
+        var tr = document.createElement('tr');
+        for (var head_info of table_info['head']) {
+            var th = document.createElement('th');
+            if ('name' in head_info) {
+                var text = document.createTextNode(head_info['name']);
+                th.append(text);
+            }
+            if ('width' in head_info) {
+                th.setAttribute('width', head_info['width'])
+            }
+            tr.append(th);
         }
-        tr.append(th);
+        thead.append(tr);
     }
-    thead.append(tr);
 }
 
-function DataTable_SetData(table_id, col_infos, data_list) {
-    var table = document.getElementById(table_id);
-    var elements = table.getElementsByTagName('tbody');
-    if (elements.length != 1) {
-        alert('<tbody> not exist.');
-        return;
-    }
-    var tbody = elements[0];
-    tbody.textContent = "";
-    for (item of data_list) {
-        var tr = document.createElement("tr");
-        for (var col_info of col_infos) {
-            var td = document.createElement("td");
-            var class_val = '';
-            var is_minus = false;
-
-            if ('name' in col_info) {
-                var val = item[col_info['name']];
-                if ('format_number' in col_info) {
-                    if (val < 0)
-                        is_minus = true
-                    options = col_info['format_number']
-                    val = new Intl.NumberFormat('ko-KR', options).format(val);
-                }
-                var text = document.createTextNode(val);
-                td.append(text);
-            }
-            if ('align' in col_info) {
-                if (col_info['align'] == 'left')
-                    class_val = class_val + " text-start";
-                else if (col_info['align'] == 'center')
-                    class_val = class_val + " text-center";
-                else if (col_info['align'] == 'right')
-                    class_val = class_val + " text-end";
-            }
-            if ('minus' in col_info && is_minus) {
-                class_val = class_val + " text-" + col_info['minus'];
-            }
-
-            if (0 < class_val.length)
-                td.setAttribute("class", class_val)
-            tr.append(td);
+function DataTable_SetData(table_infos, json_data) {
+    for (var table_info of table_infos) {
+        var table = document.getElementById(table_info['id']);
+        var elements = table.getElementsByTagName('tbody');
+        if (elements.length != 1) {
+            alert('<tbody> not exist.');
+            return;
         }
-        tbody.append(tr);
+        var tbody = elements[0];
+        tbody.textContent = "";
+
+        var data_list = json_data[table_info['data_id']];
+        for (item of data_list) {
+            var tr = document.createElement("tr");
+            for (var col_info of table_info['data']) {
+                var td = document.createElement("td");
+                var class_val = '';
+                var is_minus = false;
+    
+                if ('name' in col_info) {
+                    var val = item[col_info['name']];
+                    if ('format_number' in col_info) {
+                        if (val < 0)
+                            is_minus = true
+                        options = col_info['format_number']
+                        val = new Intl.NumberFormat('ko-KR', options).format(val);
+                    }
+                    var text = document.createTextNode(val);
+                    td.append(text);
+                }
+                if ('align' in col_info) {
+                    if (col_info['align'] == 'left')
+                        class_val = class_val + " text-start";
+                    else if (col_info['align'] == 'center')
+                        class_val = class_val + " text-center";
+                    else if (col_info['align'] == 'right')
+                        class_val = class_val + " text-end";
+                }
+                if ('minus' in col_info && is_minus) {
+                    class_val = class_val + " text-" + col_info['minus'];
+                }
+    
+                if (0 < class_val.length)
+                    td.setAttribute("class", class_val)
+                tr.append(td);
+            }
+            tbody.append(tr);
+        }
     }
 }
 
@@ -127,7 +133,7 @@ function DataTable_GetJsonData(url, send_data, success_func) {
         dataType: "json",
         success: function (response) {
             if (response.result == "Success") {
-                success_func(response.data);
+                success_func(response);
             }
             else { alert(response.result); }
         },

@@ -176,80 +176,122 @@ def fn_prod(request):
     return render(request, 'accbook/fn_prod.html', context)
 
 
-
 # =============================================================================
 # 금융상품 목록을 json으로 리턴
 
-class MyJsonEncoderFnProd(JSONEncoder):
-    def default(self, o):
-        if isinstance(o, FnProd):
-            json_object = {
-            'id': o.id,
-            'order': o.order,
-            'fn_inst': o.deposit.fn_inst.name,
-            'fn_deposit': o.deposit.name,
-            'is_domestic': '국내' if o.is_domestic else '해외',
-            'type': o.type_str,
-            'name': o.name,
-            'code': o.code,
-            'price': float(o.price),
-            'price_krw': o.price_krw,
-            'buy_price': o.buy_price,
-            'buy_price_krw': o.buy_price_krw,
-            'quantity': o.quantity,
-            'buy_amount': o.buy_amount,
-            'buy_amount_krw': o.buy_amount_krw,
-            'eval_amount': o.eval_amount,
-            'eval_amount_krw': o.eval_amount_krw,
-            'profit_loss': o.profit_loss,
-            'description': o.description,
-            }
-            return json_object
-        return None
+class FnProdView():
+    def __init__(self, fnprod):
+        self.id = fnprod.id
+        self.order = fnprod.order
+        self.fn_inst = fnprod.deposit.fn_inst.name
+        self.fn_deposit = fnprod.deposit.name
+        self.is_domestic = '국내' if fnprod.is_domestic else '해외',
+        self.type = fnprod.type_str
+        self.name = fnprod.name
+        self.code = fnprod.code
+        self.price = float(fnprod.price)
+        self.description = fnprod.description
+        self.account_id = fnprod.account.id
+        self.price_krw = 0.0
+        self.buy_price = 0.0
+        self.buy_price_krw = 0.0
+        self.quantity = 0.0
+        self.buy_amount = 0.0
+        self.buy_amount_krw = 0.0
+        self.eval_amount = 0.0
+        self.eval_amount_krw = 0.0
+        self.profit_loss = 0.0
+
+    def calc(self, sum_amount, sum_quantity, change_rate):
+        self.buy_price = sum_amount / sum_quantity
+        self.quantity = sum_quantity
+        self.buy_amount = sum_amount
+        self.eval_amount = self.price * self.quantity
+
+        if self.is_domestic:
+            self.price_krw = self.price
+            self.buy_price_krw = self.buy_price
+            self.buy_amount_krw = self.buy_amount
+            self.eval_amount_krw = self.eval_amount
+        else:
+            self.price_krw = self.price * change_rate
+            self.buy_price_krw = self.buy_price * change_rate
+            self.buy_amount_krw = self.buy_amount * change_rate
+            self.eval_amount_krw = self.eval_amount * change_rate
+
+        self.profit_loss = self.eval_amount_krw - self.buy_amount_krw
+
+class FnOverall:
+    def __init__(self, account_id, name):
+        self.account_id = account_id
+        self.name = name
+        self.buy_amount = 0.0
+        self.eval_amount = 0.0
+        self.profit_loss = 0.0
+
+    def aggregate(self, fnprodview, change_rate):
+        if fnprodview.is_domestic:
+            self.buy_amount += fnprodview.buy_amount_krw
+            self.eval_amount += fnprodview.eval_amount_krw
+        else:
+            self.buy_amount += fnprodview.buy_amount * change_rate
+            self.eval_amount += fnprodview.eval_amount_krw
+
+    def calc_profit_loss(self):
+        self.profit_loss = self.eval_amount - self.buy_amount
+
+class FnOverallCollection:
+    def __init__(self, change_rate, account_ids):
+        self.list = []
+        self.dic = {}
+        self.change_rate = change_rate
+
+        for id in account_ids:
+            account = Accounts.objects.get(id=id)
+            fnoverall = FnOverall(id, account.name)
+            self.list.append(fnoverall)
+            self.dic[account.id] = fnoverall
+
+    def aggregate(self, fnprodview):
+        fnoverall = self.dic.get(fnprodview.account_id)
+        if fnoverall:
+            fnoverall.aggregate(fnprodview, self.change_rate)
+        else:
+            print('error: id not in FnOverallCollection')
+
+    def calc_profit_loss(self):
+        for fnoverall in self.list:
+            fnoverall.calc_profit_loss()
 
 def fnprod_list(request):
     result = 'Fail'
-    result_list = []
+    result_fnprod = []
 
     rate_usd = AccBookSettings.getRateUSD()
+    rate_usd_default = AccBookSettings.getRateUSDDefault()
+    fnoverall_account_list = [ 100, 101, 102, 103, 104]
+    fnoveralls = FnOverallCollection(rate_usd_default, fnoverall_account_list)
+
     fnprod_list = FnProd.objects.order_by('order')
-    for item in fnprod_list:
-        trades = FnTrade.objects.filter(fn_prod=item) \
+    for fnprod in fnprod_list:
+        item = FnProdView(fnprod)
+        trades = FnTrade.objects.filter(fn_prod=item.id) \
                     .aggregate( \
                         sum_quantity=Sum('quantity', output_field=models.FloatField()), \
                         sum_amount=Sum(F('buy_price')*F('quantity'), output_field=models.FloatField()) \
                     )
-
         if trades['sum_amount']:
-            item.buy_price = trades['sum_amount'] / trades['sum_quantity']
-            item.quantity = trades['sum_quantity']
-            item.buy_amount = trades['sum_amount']
-            item.eval_amount = float(item.price) * item.quantity
-        else:
-            item.buy_price = 0.0
-            item.quantity = 0.0
-            item.buy_amount = 0.0
-            item.eval_amount = 0.0
+            item.calc(trades['sum_amount'], trades['sum_quantity'], rate_usd)
+        result_fnprod.append(item)
+        fnoveralls.aggregate(item)
 
-        if item.is_domestic:
-            item.price_krw = float(item.price)
-            item.buy_price_krw = item.buy_price
-            item.buy_amount_krw = item.buy_amount
-            item.eval_amount_krw = item.eval_amount
-        else:
-            item.price_krw = float(item.price) * rate_usd
-            item.buy_price_krw = item.buy_price * rate_usd
-            item.buy_amount_krw = item.buy_amount * rate_usd
-            item.eval_amount_krw = item.eval_amount * rate_usd
-
-        item.profit_loss = item.eval_amount_krw - item.buy_amount_krw
-        result_list.append(item)
+    fnoveralls.calc_profit_loss()
 
     result = 'Success'
 
-    print(f'accbook:fnprod_list : ({result}) ({len(result_list)})')
-    context = { 'result': result, 'data': result_list }
-    return JsonResponse(context, encoder=MyJsonEncoderFnProd)
+    print(f'accbook:fnprod_list : ({result}) fnoverall({len(fnoveralls.list)}) fnprod({len(result_fnprod)})')
+    context = { 'result': result, 'fnprod': result_fnprod, 'fnoverall': fnoveralls.list }
+    return JsonResponse(context, encoder=MyJsonEncoder)
 
 
 # =============================================================================

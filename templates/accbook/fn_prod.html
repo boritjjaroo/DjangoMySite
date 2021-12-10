@@ -13,54 +13,78 @@
 
 {% block javascript %}
 <script type="text/javascript">
-    var col_head_infos = [
-        {'name': 'id', 'width': '30'},
-        {'name': '순서', 'width': '30'},
-        {'name': '금융기관', 'width': '100'},
-        {'name': '거래계좌', 'width': '100'},
-        {'name': '국내/해외', 'width': '40'},
-        {'name': '종류', 'width': '60'},
-        {'name': '상품명', 'width': '200'},
-        //{'name': '코드명', 'width': '100'},
-        {'name': '현재가', 'width': '80'},
-        {'name': '현재가(원화)', 'width': '80'},
-        {'name': '평균단가', 'width': '80'},
-        {'name': '평균단가(원화)', 'width': '80'},
-        {'name': '수량', 'width': '40'},
-        {'name': '매수금액', 'width': '80'},
-        {'name': '매수금액(원화)', 'width': '80'},
-        {'name': '평가금액', 'width': '80'},
-        {'name': '평가금액(원화)', 'width': '80'},
-        {'name': '손익', 'width': '80'},
-        //{'name': '설명', 'width': '100'},
-        {'name': '비고'},
-    ];
+    var table_fnoverall_info = {
+        'id': 'table_fnoverall',
+        'data_id': 'fnoverall',
+        'head': [
+            {'name': '종류', 'width': '100'},
+            {'name': '매입금액', 'width': '100'},
+            {'name': '평가금액', 'width': '100'},
+            {'name': '손익', 'width': '100'},
+            {'name': ''},
+        ],
+        'data': [
+            {'name': 'name'},
+            {'name': 'buy_amount', 'format_number': { minimumFractionDigits: 1, maximumFractionDigits: 1 }, 'align': 'right'},
+            {'name': 'eval_amount', 'format_number': { minimumFractionDigits: 1, maximumFractionDigits: 1 }, 'align': 'right'},
+            {'name': 'profit_loss', 'format_number': { minimumFractionDigits: 1, maximumFractionDigits: 1 }, 'align': 'right', 'minus': 'danger'},
+            {},
+        ],
+    };
 
-    var col_infos = [
-        {'name': 'id', 'align': 'center'},
-        {'name': 'order', 'align': 'center'},
-        {'name': 'fn_inst'},
-        {'name': 'fn_deposit'},
-        {'name': 'is_domestic', 'align': 'center'},
-        {'name': 'type', 'align': 'center'},
-        {'name': 'name'},
-        //{'name': 'code'},
-        {'name': 'price', 'format_number': { minimumFractionDigits: 4 }, 'align': 'right'},
-        {'name': 'price_krw', 'format_number': { minimumFractionDigits: 1, maximumFractionDigits: 1 }, 'align': 'right'},
-        {'name': 'buy_price', 'format_number': { minimumFractionDigits: 4 }, 'align': 'right'},
-        {'name': 'buy_price_krw', 'format_number': { minimumFractionDigits: 1, maximumFractionDigits: 1 }, 'align': 'right'},
-        {'name': 'quantity', 'format_number': { minimumFractionDigits: 2 }, 'align': 'right'},
-        {'name': 'buy_amount', 'format_number': { minimumFractionDigits: 4 }, 'align': 'right'},
-        {'name': 'buy_amount_krw', 'format_number': { minimumFractionDigits: 1, maximumFractionDigits: 1 }, 'align': 'right'},
-        {'name': 'eval_amount', 'format_number': { minimumFractionDigits: 4 }, 'align': 'right'},
-        {'name': 'eval_amount_krw', 'format_number': { minimumFractionDigits: 1, maximumFractionDigits: 1 }, 'align': 'right'},
-        {'name': 'profit_loss', 'format_number': { minimumFractionDigits: 1, maximumFractionDigits: 1 }, 'align': 'right', 'minus': 'danger'},
-        //{'name': 'description'},
-        {},
-    ];
-                
-    function DataTable_GetJsonDataFunc(data) {
-        DataTable_SetData('table_data', col_infos, data);
+    var table_fnprod_info = {
+        'id': 'table_fnprod',
+        'data_id': 'fnprod',
+        'head': [
+            {'name': 'id', 'width': '30'},
+            {'name': '순서', 'width': '30'},
+            {'name': '금융기관', 'width': '100'},
+            {'name': '거래계좌', 'width': '100'},
+            {'name': '국내/해외', 'width': '40'},
+            {'name': '종류', 'width': '60'},
+            {'name': '상품명', 'width': '200'},
+            //{'name': '코드명', 'width': '100'},
+            {'name': '현재가', 'width': '80'},
+            {'name': '현재가(원화)', 'width': '80'},
+            {'name': '평균단가', 'width': '80'},
+            {'name': '평균단가(원화)', 'width': '80'},
+            {'name': '수량', 'width': '40'},
+            {'name': '매수금액', 'width': '80'},
+            {'name': '매수금액(원화)', 'width': '80'},
+            {'name': '평가금액', 'width': '80'},
+            {'name': '평가금액(원화)', 'width': '80'},
+            {'name': '손익', 'width': '80'},
+            //{'name': '설명', 'width': '100'},
+            {'name': ''},
+        ],
+        'data': [
+            {'name': 'id', 'align': 'center'},
+            {'name': 'order', 'align': 'center'},
+            {'name': 'fn_inst'},
+            {'name': 'fn_deposit'},
+            {'name': 'is_domestic', 'align': 'center'},
+            {'name': 'type', 'align': 'center'},
+            {'name': 'name'},
+            //{'name': 'code'},
+            {'name': 'price', 'format_number': { minimumFractionDigits: 4 }, 'align': 'right'},
+            {'name': 'price_krw', 'format_number': { minimumFractionDigits: 1, maximumFractionDigits: 1 }, 'align': 'right'},
+            {'name': 'buy_price', 'format_number': { minimumFractionDigits: 4 }, 'align': 'right'},
+            {'name': 'buy_price_krw', 'format_number': { minimumFractionDigits: 1, maximumFractionDigits: 1 }, 'align': 'right'},
+            {'name': 'quantity', 'format_number': { minimumFractionDigits: 2 }, 'align': 'right'},
+            {'name': 'buy_amount', 'format_number': { minimumFractionDigits: 4 }, 'align': 'right'},
+            {'name': 'buy_amount_krw', 'format_number': { minimumFractionDigits: 1, maximumFractionDigits: 1 }, 'align': 'right'},
+            {'name': 'eval_amount', 'format_number': { minimumFractionDigits: 4 }, 'align': 'right'},
+            {'name': 'eval_amount_krw', 'format_number': { minimumFractionDigits: 1, maximumFractionDigits: 1 }, 'align': 'right'},
+            {'name': 'profit_loss', 'format_number': { minimumFractionDigits: 1, maximumFractionDigits: 1 }, 'align': 'right', 'minus': 'danger'},
+            //{'name': 'description'},
+            {},
+        ],
+    };
+
+    var data_table_infos = [ table_fnoverall_info, table_fnprod_info ];
+
+    function DataTable_GetJsonDataFunc(json_data) {
+        DataTable_SetData(data_table_infos, json_data);
     }
 
     function LoadDataTable(scrollBottom) {
@@ -77,19 +101,32 @@
     }
 
     $(function () {
-        DataTable_MakeTHead('table_data', col_head_infos);
+        DataTable_MakeTHead(data_table_infos);
         LoadDataTable();
     });
 </script>
 {% endblock %}
 
 {% block contents %}
+<div class="row mt-4">
+    <h5>금융상품 현황</h5>
+</div>
 <div class="row">
+    <div class="col">
+        <table id="table_fnoverall" class="table table-bordered table-sm">
+            <thead class="table-light align-middle text-center" style="position: sticky; top: 0; z-index: 1;">
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </div>
+</div>
+<div class="row mt-4">
     <h5>금융상품 목록</h5>
 </div>
 <div class="row">
     <div id="div_data" class="overflow-auto">
-        <table id="table_data" class="table table-bordered table-sm" style="font-size: 0.8rem;">
+        <table id="table_fnprod" class="table table-bordered table-sm" style="font-size: 0.8rem;">
             <thead class="table-light align-middle text-center" style="position: sticky; top: 0; z-index: 1;">
             </thead>
             <tbody>

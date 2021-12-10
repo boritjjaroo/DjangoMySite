@@ -232,18 +232,6 @@ class FnProd(models.Model):
     def type_str(self):
         return FnProd_Types[self.type]
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.price_krw = 0.0
-        self.buy_price = 0.0
-        self.buy_price_krw = 0.0
-        self.quantity = 0.0
-        self.buy_amount = 0.0
-        self.buy_amount_krw = 0.0
-        self.eval_amount = 0.0
-        self.eval_amount_krw = 0.0
-        self.profit_loss = 0.0
-
     def __str__(self) -> str:
         return str(self.name)
 
